@@ -26,6 +26,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,14 +63,18 @@ import java.util.Locale
 fun HomeScreen(
     viewModel: CurrentWeatherViewModel = viewModel(
         factory = CurrentWeatherViewModel.WeatherViewModelFactory(
-            WeatherRepositoryImp(RemoteDataSourceImp()),
-            context = LocalContext.current
+            WeatherRepositoryImp(RemoteDataSourceImp(), LocalContext.current),
+            LocalContext.current
         )
     ),
     isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val weatherState by viewModel.weatherState.collectAsState()
     val cityName by viewModel.cityName.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.setupLocationUpdates()
+    }
 
     val colors = if (isDarkTheme) {
         listOf(darkPurple, darkBabyBlue)
@@ -83,21 +89,82 @@ fun HomeScreen(
         tileMode = TileMode.Decal
     )
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(gradientBrush),
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.Center
     ) {
-        item { CurrentWeather(weatherState, cityName) }
-        item { HourlyForecast() }
-        item { DailyForecast() }
-        item { WindData() }
+        when (weatherState) {
+            is UiState.Loading -> {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+            is UiState.Success -> {
+                val data = (weatherState as UiState.Success<CurrentResponse>).data
+                WeatherContent(data = data, cityName = cityName ?: "Unknown Location")
+            }
+            is UiState.Error -> {
+                Text(
+                    text = (weatherState as UiState.Error).message,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun CurrentWeather(weatherState: UiState<CurrentResponse>, cityName: String?) {
+private fun WeatherContent(
+    data: CurrentResponse,
+    cityName: String
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item {
+            Spacer(modifier = Modifier.height(52.dp))
+            Text(
+                text = cityName,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = "${(data.main?.temp as? Double)?.toInt()}°",
+                fontSize = 80.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = data.weather?.firstOrNull()?.description?.replaceFirstChar { it.uppercase() }
+                    ?: "Unknown",
+                fontSize = 20.sp,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        item { HourlyForecast(data) }
+        item { DailyForecast() }
+        item {
+            WindData(
+                windSpeed = data.wind?.speed as? Double ?: 0.0,
+                windGust = data.wind?.gust as? Double ?: 0.0,
+                windDirection = data.wind?.deg?.toFloat() ?: 0f
+            )
+        }
+    }
+}
+
+@Composable
+fun CurrentWeather(weatherState: UiState<CurrentResponse>, cityName: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,7 +182,7 @@ fun CurrentWeather(weatherState: UiState<CurrentResponse>, cityName: String?) {
                 val weather = weatherState.data
                 Spacer(modifier = Modifier.height(52.dp))
                 Text(
-                    text = cityName ?: "Unknown Location",
+                    text = cityName,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -145,7 +212,7 @@ fun CurrentWeather(weatherState: UiState<CurrentResponse>, cityName: String?) {
 }
 
 @Composable
-fun HourlyForecast() {
+fun HourlyForecast(data: CurrentResponse) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -293,9 +360,14 @@ fun DailyForecast() {
 }
 
 @Composable
-fun WindData() {
+fun WindData(
+    windSpeed: Double,
+    windGust: Double,
+    windDirection: Float,
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
             .background(
@@ -323,19 +395,17 @@ fun WindData() {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left column: Wind data
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                WindDataRow(label = "Wind", value = "4 mph")
-                WindDataRow(label = "Gusts", value = "4 mph")
-                WindDataRow(label = "Direction", value = "345° NNW")
+                WindDataRow(label = "Wind", value = "${windSpeed.toInt()} mph")
+                WindDataRow(label = "Gusts", value = "${windGust.toInt()} mph")
+                WindDataRow(label = "Direction", value = "$windDirection° NNW")
             }
             Spacer(Modifier.width(16.dp))
-            // Right: Compass
             WindDirectionCompass(
-                windDirection = 345f,
+                windDirection = windDirection,
                 modifier = Modifier.size(120.dp)
             )
         }
