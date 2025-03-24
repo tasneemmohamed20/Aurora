@@ -1,5 +1,6 @@
 package com.example.aurora.home
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -20,11 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.magnifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,7 +43,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,25 +66,27 @@ import com.example.aurora.ui.theme.babyBlue
 import com.example.aurora.ui.theme.babyPurple
 import com.example.aurora.ui.theme.darkBabyBlue
 import com.example.aurora.ui.theme.darkPurple
+import com.example.aurora.ui.theme.gradientBrush
 import com.example.aurora.utils.LocationHelper
+import com.example.aurora.workers.WeatherWorkManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.text.compareTo
-import kotlin.text.get
 
 @Composable
 fun HomeScreen(
+    context: Context = LocalContext.current,
     currentWeatherViewModel: CurrentWeatherViewModel = viewModel(
         factory = CurrentWeatherViewModel.WeatherViewModelFactory(
-            WeatherRepositoryImp(RemoteDataSourceImp(), LocalContext.current),
-            LocalContext.current
+            WeatherRepositoryImp(RemoteDataSourceImp(), context),
+            LocationHelper(context),
+            WeatherWorkManager(context)
         )
     ),
     hourlyForecastViewModel: HourlyForecastViewModel = viewModel(
         factory = HourlyForecastViewModel.Factory(
-            WeatherRepositoryImp(RemoteDataSourceImp(), LocalContext.current),
-            LocationHelper(LocalContext.current)
+            WeatherRepositoryImp(RemoteDataSourceImp(), context),
+            LocationHelper(context)
         )
     ),
     isDarkTheme: Boolean = isSystemInDarkTheme()
@@ -94,7 +94,7 @@ fun HomeScreen(
 
 
     val weatherState by currentWeatherViewModel.weatherState.collectAsState()
-    val cityName by currentWeatherViewModel.cityName.collectAsState()
+    val cityName by hourlyForecastViewModel.cityName.collectAsState()
     val forecastState by hourlyForecastViewModel.forecastState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -102,23 +102,13 @@ fun HomeScreen(
         hourlyForecastViewModel.setupLocationUpdates() // Make sure this is called
     }
 
-    val colors = if (isDarkTheme) {
-        listOf(darkPurple, darkBabyBlue)
-    } else {
-        listOf(babyPurple, babyBlue)
-    }
+    val background =  gradientBrush(isDarkTheme)
 
-    val gradientBrush = Brush.linearGradient(
-        colors = colors,
-        start = Offset(Float.POSITIVE_INFINITY, 0f),
-        end = Offset(0f, Float.POSITIVE_INFINITY),
-        tileMode = TileMode.Decal
-    )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradientBrush),
+            .background(background),
         contentAlignment = Alignment.Center
     ) {
         when {
@@ -239,7 +229,7 @@ private fun HourlyForecast(data: List<HourlyForecastData>) {
                 // Check if forecast is within next 24 hours
                 actualTime >= currentTimeMillis &&
                         actualTime <= (currentTimeMillis + 24 * 60 * 60 * 1000)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
         }.take(8) // Typically 3-hour intervals, so 8 items = 24 hours
@@ -393,7 +383,7 @@ private fun DailyForecastContent(data: List<HourlyForecastData>) {
                         temps.maxOrNull() ?: 0,
                         mostFrequentIcon
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }.distinctBy { it.dayName }

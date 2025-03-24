@@ -22,9 +22,19 @@ class HourlyForecastViewModel(
     private val _forecastState = MutableStateFlow<ForecastUiState>(ForecastUiState.Loading)
     val forecastState = _forecastState.asStateFlow()
 
-//    init {
-//        setupLocationUpdates()
-//    }
+    private val _cityName = MutableStateFlow<String?>(null)
+    val cityName = _cityName.asStateFlow()
+
+    init {
+        initializeApp()
+    }
+
+    private fun initializeApp() {
+        viewModelScope.launch {
+            setupLocationUpdates()
+        }
+    }
+
 
     fun setupLocationUpdates() {
         viewModelScope.launch {
@@ -34,27 +44,14 @@ class HourlyForecastViewModel(
                     return@launch
                 }
 
-                try {
-                    // Get initial location with explicit permission check
-                    if (locationHelper.hasLocationPermission()) {
-                        locationHelper.getLastKnownLocation()?.let { location ->
-                            fetchForecastData(location.latitude, location.longitude)
-                        }
-                    }
+                // Start location updates
+                locationHelper.startLocationUpdates()
 
-                    // Start location updates
-                    locationHelper.startLocationUpdates()
-
-                    // Collect location updates
-                    locationHelper.getLocationUpdates().collect { location ->
-                        location?.let {
-                            fetchForecastData(it.latitude, it.longitude)
-                        }
+                // Collect location updates
+                locationHelper.getLocationUpdates().collect { location ->
+                    location?.let {
+                        fetchForecastData(it.latitude, it.longitude)
                     }
-                } catch (e: SecurityException) {
-                    _forecastState.value = ForecastUiState.Error("Location permission denied")
-                } catch (e: Exception) {
-                    _forecastState.value = ForecastUiState.Error("Failed to setup location updates: ${e.message}")
                 }
             } catch (e: Exception) {
                 _forecastState.value = ForecastUiState.Error("Failed to setup location updates: ${e.message}")
@@ -69,6 +66,7 @@ class HourlyForecastViewModel(
                     _forecastState.value = ForecastUiState.Success(
                         processHourlyData(response)
                     )
+                    _cityName.value = response.city?.name
                 } else {
                     _forecastState.value = ForecastUiState.Error("API Error: ${response.cod}")
                 }
@@ -92,7 +90,6 @@ class HourlyForecastViewModel(
                     else -> timeFormat.format(Date(timestamp))
                 }
 
-                // Use the dtTxt from API directly instead of formatting timestamp
                 val dt_txt = item.dtTxt?.split(" ")?.firstOrNull() ?:
                 dateFormat.format(Date(timestamp))
 

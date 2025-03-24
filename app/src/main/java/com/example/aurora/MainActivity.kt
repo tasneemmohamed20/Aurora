@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +33,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.work.WorkManager
 import com.example.aurora.home.HomeScreen
 import com.example.aurora.home.current_weather.viewmodel.CurrentWeatherViewModel
 import com.example.aurora.data.remote.RemoteDataSourceImp
@@ -43,13 +43,16 @@ import com.example.aurora.ui.theme.babyBlue
 import com.example.aurora.ui.theme.babyPurple
 import com.example.aurora.ui.theme.darkBabyBlue
 import com.example.aurora.ui.theme.darkPurple
-import kotlin.toString
+import com.example.aurora.ui.theme.gradientBrush
+import com.example.aurora.utils.LocationHelper
+import com.example.aurora.workers.WeatherWorkManager
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CurrentWeatherViewModel by viewModels {
         CurrentWeatherViewModel.WeatherViewModelFactory(
             WeatherRepositoryImp(RemoteDataSourceImp(), this),
-            this
+            LocationHelper(this),
+            WeatherWorkManager(this)
         )
     }
 
@@ -142,23 +145,12 @@ fun CustomBottomNavBar(
     onMenuClick: () -> Unit = {}
 ) {
     var isDarkTheme: Boolean = isSystemInDarkTheme()
-
-    val colors = if (isDarkTheme) {
-        listOf(darkPurple, darkBabyBlue)
-    } else {
-        listOf(babyPurple, babyBlue)
-    }
-    val gradientBrush = Brush.linearGradient(
-        colors = colors,
-        start = Offset(Float.POSITIVE_INFINITY, 0f),
-        end = Offset(0f, Float.POSITIVE_INFINITY),
-        tileMode = TileMode.Decal
-    )
+    val background =  gradientBrush(isDarkTheme)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(60.dp)
-            .background(gradientBrush) // Assuming a dark blue background
+            .background(background)
     ) {
         Row(
             modifier = Modifier
@@ -207,14 +199,6 @@ fun CustomBottomNavBar(
             }
         }
 
-        // Bottom White Indicator
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(0.3f)
-                .height(4.dp)
-                .background(Color.White, shape = RoundedCornerShape(2.dp))
-        )
     }
 }
 

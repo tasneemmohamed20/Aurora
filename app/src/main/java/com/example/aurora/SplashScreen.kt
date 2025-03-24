@@ -34,6 +34,7 @@ import com.example.aurora.ui.theme.babyBlue
 import com.example.aurora.ui.theme.babyPurple
 import com.example.aurora.ui.theme.darkBabyBlue
 import com.example.aurora.ui.theme.darkPurple
+import com.example.aurora.ui.theme.gradientBrush
 import kotlinx.coroutines.delay
 
 @Composable
@@ -41,11 +42,6 @@ fun SplashScreenUI(
     isDarkTheme: Boolean = isSystemInDarkTheme(),
     onNavigateToHome: () -> Unit = {}
     ) {
-    val colors = if (isDarkTheme) {
-        listOf(darkPurple, darkBabyBlue)
-    } else {
-        listOf(babyPurple, babyBlue)
-    }
 
     val lottieSize = remember { Animatable(500f) }
     val imageSize = remember { Animatable(80f) }
@@ -79,17 +75,12 @@ fun SplashScreenUI(
         onNavigateToHome()
     }
 
-    val gradientBrush = Brush.linearGradient(
-        colors = colors,
-        start = Offset(Float.POSITIVE_INFINITY, 0f),
-        end = Offset(0f, Float.POSITIVE_INFINITY),
-        tileMode = TileMode.Decal
-    )
+    val background = gradientBrush(isDarkTheme)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradientBrush),
+            .background(background),
         contentAlignment = Alignment.Center
     ) {
         Row(

@@ -9,6 +9,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.aurora.data.model.current_weather.CurrentResponse
 import com.example.aurora.data.repo.WeatherRepository
+import com.example.aurora.utils.LocationHelper
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.Dispatchers
@@ -20,15 +21,12 @@ class WeatherUpdateWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    private val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+    private val locationHelper = LocationHelper(context)
 
-    companion object {
-        const val WORK_NAME = "WeatherUpdateWork"
-    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val location = getLastKnownLocation()
+            val location = locationHelper.getLastKnownLocation()
             if (location != null) {
                 val repository = WorkerUtils.getRepository()
                 val response = repository.getWeather(location.latitude, location.longitude)
@@ -43,26 +41,9 @@ class WeatherUpdateWorker(
             } else {
                 Result.retry()
             }
-        } catch (e: Exception) {
+        } catch (e: SecurityException) {
             Result.retry()
         }
-    }
-
-    private fun getLastKnownLocation(): Location? {
-        if (!hasLocationPermission()) return null
-
-        return try {
-            Tasks.await(fusedClient.lastLocation)
-        } catch (e: SecurityException) {
-            null
-        }
-    }
-
-    private fun hasLocationPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(
-            applicationContext,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
     }
 }
 
