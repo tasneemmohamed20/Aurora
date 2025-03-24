@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.aurora.R
 import com.example.aurora.data.model.current_weather.CurrentResponse
+import com.example.aurora.data.model.hourly_daily.HourlyDailyResponse
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.flowOn
 
 class WeatherRepositoryImp(
     private val remoteDataSource: RemoteDataSourceImp,
-    private val context: Context
+    context: Context
 ) : WeatherRepository {
     private val apiKey = context.getString(R.string.weather_api_key)
 
@@ -30,13 +31,16 @@ class WeatherRepositoryImp(
             }
             .flowOn(Dispatchers.IO)
 
-    override suspend fun getLastKnownWeather(): Flow<CurrentResponse> =
-        remoteDataSource.getCurrentWeather(
+    override suspend fun getForecast(
+        latitude: Double,
+        longitude: Double
+    ): Flow<HourlyDailyResponse> {
+        return remoteDataSource.getHourlyDailyForecast(
             apiKey = apiKey,
-            lat = 0.0,
-            lon = 0.0,
+            lat = latitude,
+            lon = longitude,
             language = "en",
             units = "metric"
         )
-            .flowOn(Dispatchers.IO)
+    }
 }

@@ -1,11 +1,10 @@
-package com.example.aurora.Home.current_weather.ViewModel
+package com.example.aurora.home.current_weather.viewmodel
 
 import android.content.Context
 import com.example.aurora.data.model.current_weather.CurrentResponse
 import com.example.aurora.data.model.current_weather.Main
 import com.example.aurora.data.model.current_weather.WeatherItem
 import com.example.aurora.data.repo.WeatherRepository
-import com.example.aurora.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf

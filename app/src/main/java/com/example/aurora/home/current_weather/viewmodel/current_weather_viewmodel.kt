@@ -1,4 +1,4 @@
-package com.example.aurora.Home.current_weather.ViewModel
+package com.example.aurora.home.current_weather.viewmodel
 
 import android.content.Context
 import android.location.Geocoder

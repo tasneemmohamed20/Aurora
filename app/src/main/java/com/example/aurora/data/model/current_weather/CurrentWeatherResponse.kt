@@ -1,5 +1,7 @@
 package com.example.aurora.data.model.current_weather
 
+import com.google.gson.annotations.SerializedName
+
 data class CurrentResponse(
 	val visibility: Int? = null,
 	val timezone: Int? = null,
@@ -50,6 +52,7 @@ data class Main(
 	val humidity: Int? = null,
 	val pressure: Int? = null,
 	val seaLevel: Int? = null,
-	val feelsLike: Any? = null,
+	@SerializedName("feels_like")
+	val feelsLike: Double? = null,
 	val tempMax: Any? = null
 )
