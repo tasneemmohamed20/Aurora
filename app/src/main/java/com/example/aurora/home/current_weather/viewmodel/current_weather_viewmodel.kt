@@ -1,27 +1,17 @@
 package com.example.aurora.home.current_weather.viewmodel
 
-import android.content.Context
-import android.location.Geocoder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import com.example.aurora.data.model.current_weather.CurrentResponse
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
-import com.example.aurora.workers.WeatherUpdateWorker
 import com.example.aurora.workers.WeatherWorkManager
 import com.example.aurora.workers.WorkerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 class CurrentWeatherViewModel(
     private val repository: WeatherRepository,

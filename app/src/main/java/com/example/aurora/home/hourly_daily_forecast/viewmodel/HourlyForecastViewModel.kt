@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -90,13 +89,13 @@ class HourlyForecastViewModel(
                     else -> timeFormat.format(Date(timestamp))
                 }
 
-                val dt_txt = item.dtTxt?.split(" ")?.firstOrNull() ?:
+                val dateTxt = item.dtTxt?.split(" ")?.firstOrNull() ?:
                 dateFormat.format(Date(timestamp))
 
                 hourlyDataList.add(
                     HourlyForecastData(
                         time = time,
-                        dt_txt = dt_txt,
+                        dt_txt = dateTxt,
                         temperature = (it.main?.temp as? Double)?.toInt() ?: 0,
                         weatherIcon = it.weather?.firstOrNull()?.icon ?: "",
                         weatherDescription = it.weather?.firstOrNull()?.description ?: ""

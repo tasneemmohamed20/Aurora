@@ -17,11 +17,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,10 +27,6 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.aurora.ui.theme.AuroraTheme
-import com.example.aurora.ui.theme.babyBlue
-import com.example.aurora.ui.theme.babyPurple
-import com.example.aurora.ui.theme.darkBabyBlue
-import com.example.aurora.ui.theme.darkPurple
 import com.example.aurora.ui.theme.gradientBrush
 import kotlinx.coroutines.delay
 

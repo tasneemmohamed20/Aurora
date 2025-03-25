@@ -23,16 +23,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,7 +47,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,10 +66,8 @@ import com.example.aurora.home.current_weather.viewmodel.UiState
 import com.example.aurora.home.hourly_daily_forecast.viewmodel.ForecastUiState
 import com.example.aurora.home.hourly_daily_forecast.viewmodel.HourlyForecastData
 import com.example.aurora.home.hourly_daily_forecast.viewmodel.HourlyForecastViewModel
-import com.example.aurora.ui.theme.babyBlue
-import com.example.aurora.ui.theme.babyPurple
-import com.example.aurora.ui.theme.darkBabyBlue
-import com.example.aurora.ui.theme.darkPurple
+import com.example.aurora.ui.theme.components.CustomAppBar
+import com.example.aurora.ui.theme.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
@@ -88,96 +90,135 @@ fun HomeScreen(
             WeatherRepositoryImp(RemoteDataSourceImp(), context),
             LocationHelper(context)
         )
-    ),
-    isDarkTheme: Boolean = isSystemInDarkTheme()
+    )
 ) {
-
-
     val weatherState by currentWeatherViewModel.weatherState.collectAsState()
     val cityName by hourlyForecastViewModel.cityName.collectAsState()
     val forecastState by hourlyForecastViewModel.forecastState.collectAsState()
 
     LaunchedEffect(Unit) {
         currentWeatherViewModel.setupLocationUpdates()
-        hourlyForecastViewModel.setupLocationUpdates() // Make sure this is called
+        hourlyForecastViewModel.setupLocationUpdates()
     }
 
-    val background =  gradientBrush(isDarkTheme)
-
+    val background = gradientBrush(isSystemInDarkTheme())
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(background),
-        contentAlignment = Alignment.Center
+            .background(background)
+//            .systemBarsPadding()
     ) {
-        when {
-            weatherState is UiState.Loading || forecastState is ForecastUiState.Loading -> {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
-            weatherState is UiState.Success && forecastState is ForecastUiState.Success -> {
-                val currentWeather = (weatherState as UiState.Success<CurrentResponse>).data
-                val forecastData = (forecastState as ForecastUiState.Success).data
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 50.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    item { CurrentWeatherContent(currentWeather, cityName ?: "Unknown Location") }
-                    item {
-                        HourlyForecast(forecastData)
-                        DailyForecast(forecastData)
-                    }
-                    item { WindData(
-                        windSpeed = currentWeather.wind?.speed as? Double ?: 0.0,
-                        windGust = currentWeather.wind?.gust as? Double ?: 0.0,
-                        windDirection = currentWeather.wind?.deg?.toFloat() ?: 0f
-                    ) }
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(0.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                FeelsLike(feelsLike = currentWeather.main?.feelsLike ?: 0.0)
+        Column {
+//            Spacer(modifier = Modifier.height(statusBarHeight))
+
+            CustomAppBar(
+                title = cityName ?: "Location",
+                rightIcon = {
+                    var showMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Menu",
+                                tint = Color.White
+                            )
+                        }
+                        MenuOptions(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            onSettingsClick = {
+                                // Handle settings navigation
+                            },
+                            onAlertsClick = {
+                                // Handle alerts navigation
                             }
-                            Box(modifier = Modifier.weight(1f)) {
-                                Humidity(humidity = currentWeather.main?.humidity ?: 0)
+                        )
+                    }
+                },
+                leftIcon = {
+                    IconButton(onClick = { /* handle settings click */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Settings",
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    weatherState is UiState.Loading || forecastState is ForecastUiState.Loading -> {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                    weatherState is UiState.Success && forecastState is ForecastUiState.Success -> {
+                        val currentWeather = (weatherState as UiState.Success<CurrentResponse>).data
+                        val forecastData = (forecastState as ForecastUiState.Success).data
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item { CurrentWeatherContent(currentWeather) }
+                            item {
+                                HourlyForecast(forecastData)
+                                DailyForecast(forecastData)
+                            }
+                            item { WindData(
+                                windSpeed = currentWeather.wind?.speed as? Double ?: 0.0,
+                                windGust = currentWeather.wind?.gust as? Double ?: 0.0,
+                                windDirection = currentWeather.wind?.deg?.toFloat() ?: 0f
+                            ) }
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                                ) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        FeelsLike(feelsLike = currentWeather.main?.feelsLike ?: 0.0)
+                                    }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        Humidity(humidity = currentWeather.main?.humidity ?: 0)
+                                    }
+                                }
                             }
                         }
                     }
+                    weatherState is UiState.Error -> {
+                        Text(
+                            text = (weatherState as UiState.Error).message,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                    forecastState is ForecastUiState.Error -> {
+                        Text(
+                            text = (forecastState as ForecastUiState.Error).message,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
                 }
-            }
-            weatherState is UiState.Error -> {
-                Text(
-                    text = (weatherState as UiState.Error).message,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            forecastState is ForecastUiState.Error -> {
-                Text(
-                    text = (forecastState as ForecastUiState.Error).message,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
-                )
             }
         }
     }
 }
 
 @Composable
-fun CurrentWeatherContent(data: CurrentResponse, cityName: String) {
+fun CurrentWeatherContent(data: CurrentResponse) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,12 +226,12 @@ fun CurrentWeatherContent(data: CurrentResponse, cityName: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(52.dp))
-        Text(
-            text = cityName,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
+//        Text(
+//            text = cityName,
+//            fontSize = 32.sp,
+//            fontWeight = FontWeight.Bold,
+//            color = Color.White
+//        )
         Text(
             text = "${(data.main?.temp as? Double)?.toInt()}°",
             fontSize = 80.sp,

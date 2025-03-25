@@ -1,17 +1,11 @@
 package com.example.aurora.workers
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
-import androidx.core.app.ActivityCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.aurora.data.model.current_weather.CurrentResponse
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
@@ -41,7 +35,7 @@ class WeatherUpdateWorker(
             } else {
                 Result.retry()
             }
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
             Result.retry()
         }
     }

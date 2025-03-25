@@ -29,13 +29,13 @@ class LocationHelper(private val context: Context) {
     ) == PackageManager.PERMISSION_GRANTED
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    suspend fun getLastKnownLocation(): Location? {
+    fun getLastKnownLocation(): Location? {
         if (!hasLocationPermission()) return null
         return try {
             Tasks.await(fusedClient.lastLocation)?.also {
                 _locationFlow.value = it
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

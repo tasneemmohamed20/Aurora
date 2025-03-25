@@ -10,4 +10,13 @@ sealed class Routes{
     @Serializable
     data object HomeRoute : Routes()
 
+    @Serializable
+    data object FavoritesRoute : Routes()
+
+    @Serializable
+    data object SettingsRoute : Routes()
+
+    @Serializable
+    data object AlertsRoute : Routes()
+
 }
