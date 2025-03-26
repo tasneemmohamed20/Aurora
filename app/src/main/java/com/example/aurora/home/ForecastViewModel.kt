@@ -1,11 +1,14 @@
-package com.example.aurora.home.hourly_daily_forecast.viewmodel
+package com.example.aurora.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.aurora.data.model.hourly_daily.HourlyDailyResponse
+import com.example.aurora.data.model.hourly_daily.ForecastResponse
+import com.example.aurora.data.model.hourly_daily.ListItem
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
+import com.example.aurora.workers.WeatherWorkManager
+import com.example.aurora.workers.WorkerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -13,9 +16,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class HourlyForecastViewModel(
+
+class ForecastViewModel(
     private val repository: WeatherRepository,
-    private val locationHelper: LocationHelper
+    private val locationHelper: LocationHelper,
+    private val weatherWorkManager: WeatherWorkManager
 ) : ViewModel() {
 
     private val _forecastState = MutableStateFlow<ForecastUiState>(ForecastUiState.Loading)
@@ -30,6 +35,8 @@ class HourlyForecastViewModel(
 
     private fun initializeApp() {
         viewModelScope.launch {
+            WorkerUtils.initRepository(repository)
+            weatherWorkManager.setupPeriodicWeatherUpdate()
             setupLocationUpdates()
         }
     }
@@ -62,9 +69,8 @@ class HourlyForecastViewModel(
         try {
             repository.getForecast(latitude, longitude).collect { response ->
                 if (response.cod == "200") {
-                    _forecastState.value = ForecastUiState.Success(
-                        processHourlyData(response)
-                    )
+                    val processedData = processHourlyData(response)
+                    _forecastState.value = ForecastUiState.Success(processedData)
                     _cityName.value = response.city?.name
                 } else {
                     _forecastState.value = ForecastUiState.Error("API Error: ${response.cod}")
@@ -75,12 +81,12 @@ class HourlyForecastViewModel(
         }
     }
 
-    private fun processHourlyData(response: HourlyDailyResponse): List<HourlyForecastData> {
-        val hourlyDataList = mutableListOf<HourlyForecastData>()
+    private fun processHourlyData(response: ForecastResponse): MutableList<ListItem> {
+        val hourlyDataList = mutableListOf<ListItem>()
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-        response.list?.forEach { item ->
+         response.list?.forEach { item ->
             item?.let {
                 val timestamp = it.dt?.toLong()?.times(1000) ?: return@forEach
 
@@ -93,12 +99,8 @@ class HourlyForecastViewModel(
                 dateFormat.format(Date(timestamp))
 
                 hourlyDataList.add(
-                    HourlyForecastData(
-                        time = time,
-                        dt_txt = dateTxt,
-                        temperature = (it.main?.temp as? Double)?.toInt() ?: 0,
-                        weatherIcon = it.weather?.firstOrNull()?.icon ?: "",
-                        weatherDescription = it.weather?.firstOrNull()?.description ?: ""
+                    item.copy(
+                        dtTxt = "$time, $dateTxt"
                     )
                 )
             }
@@ -113,12 +115,13 @@ class HourlyForecastViewModel(
 
     class Factory(
         private val repository: WeatherRepository,
-        private val locationHelper: LocationHelper
+        private val locationHelper: LocationHelper,
+        private val weatherWorkManager: WeatherWorkManager
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(HourlyForecastViewModel::class.java)) {
-                return HourlyForecastViewModel(repository, locationHelper) as T
+            if (modelClass.isAssignableFrom(ForecastViewModel::class.java)) {
+                return ForecastViewModel(repository, locationHelper, weatherWorkManager) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -127,14 +130,6 @@ class HourlyForecastViewModel(
 
 sealed class ForecastUiState {
     data object Loading : ForecastUiState()
-    data class Success(val data: List<HourlyForecastData>) : ForecastUiState()
+    data class Success(val data: List<ListItem>) : ForecastUiState()
     data class Error(val message: String) : ForecastUiState()
 }
-
-data class HourlyForecastData(
-    val time: String,
-    val dt_txt: String,
-    val temperature: Int,
-    val weatherIcon: String,
-    val weatherDescription: String
-)

@@ -3,7 +3,7 @@ package com.example.aurora.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.aurora.data.model.current_weather.CurrentResponse
+import com.example.aurora.data.model.hourly_daily.ForecastResponse
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +23,7 @@ class WeatherUpdateWorker(
             val location = locationHelper.getLastKnownLocation()
             if (location != null) {
                 val repository = WorkerUtils.getRepository()
-                val response = repository.getWeather(location.latitude, location.longitude)
+                val response = repository.getForecast(location.latitude, location.longitude)
                     .firstOrNull()
 
                 if (response != null) {
@@ -43,7 +43,7 @@ class WeatherUpdateWorker(
 
 object WorkerUtils {
     private var repository: WeatherRepository? = null
-    private var cachedWeatherData: CurrentResponse? = null
+    private var cachedWeatherData: ForecastResponse? = null
 
     fun initRepository(repo: WeatherRepository) {
         repository = repo
@@ -53,9 +53,9 @@ object WorkerUtils {
         return repository ?: throw IllegalStateException("Repository not initialized")
     }
 
-    fun cacheWeatherData(data: CurrentResponse) {
+    fun cacheWeatherData(data: ForecastResponse) {
         cachedWeatherData = data
     }
 
-    fun getCachedWeatherData(): CurrentResponse? = cachedWeatherData
+    fun getCachedWeatherData(): ForecastResponse? = cachedWeatherData
 }

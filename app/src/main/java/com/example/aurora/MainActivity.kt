@@ -17,14 +17,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
 import com.example.aurora.home.HomeScreen
-import com.example.aurora.home.current_weather.viewmodel.CurrentWeatherViewModel
+import com.example.aurora.home.ForecastViewModel
 import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: CurrentWeatherViewModel by viewModels {
-        CurrentWeatherViewModel.WeatherViewModelFactory(
+    private val viewModel: ForecastViewModel by viewModels {
+        ForecastViewModel.Factory(
             WeatherRepositoryImp(RemoteDataSourceImp(), this),
             LocationHelper(this),
             WeatherWorkManager(this)

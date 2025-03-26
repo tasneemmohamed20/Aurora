@@ -1,6 +1,8 @@
 package com.example.aurora.data.model.hourly_daily
 
-data class HourlyDailyResponse(
+import com.google.gson.annotations.SerializedName
+
+data class ForecastResponse(
 	val city: City? = null,
 	val cnt: Int? = null,
 	val cod: String? = null,
@@ -53,6 +55,7 @@ data class Main(
 	val humidity: Int? = null,
 	val pressure: Int? = null,
 	val seaLevel: Int? = null,
+	@SerializedName("feels_like")
 	val feelsLike: Any? = null,
 	val tempMax: Any? = null
 )
