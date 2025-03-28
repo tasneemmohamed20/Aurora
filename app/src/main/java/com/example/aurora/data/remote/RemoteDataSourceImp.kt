@@ -1,7 +1,7 @@
 package com.example.aurora.data.remote
 
 import android.util.Log
-import com.example.aurora.data.model.hourly_daily.ForecastResponse
+import com.example.aurora.data.model.forecast.ForecastResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch

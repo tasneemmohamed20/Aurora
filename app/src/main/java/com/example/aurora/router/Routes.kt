@@ -19,4 +19,12 @@ sealed class Routes{
     @Serializable
     data object AlertsRoute : Routes()
 
+    @Serializable
+    data class MapRoute(
+        val lat: Double,
+        val lon: Double
+    ) : Routes() {
+        override fun toString(): String = "map/$lat/$lon"
+    }
+
 }

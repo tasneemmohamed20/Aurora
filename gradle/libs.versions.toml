@@ -1,6 +1,6 @@
 [versions]
 accompanistSystemuicontroller = "0.32.0"
-agp = "8.9.0"
+agp = "8.9.1"
 compose = "1.0.0-beta01"
 converterGson = "2.11.0"
 kotlin = "2.0.21"
@@ -13,9 +13,11 @@ lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 composeBom = "2025.03.00"
 lottieCompose = "6.3.0"
+mapsCompose = "6.4.1"
 navigationCompose = "2.8.9"
 playServicesLocation = "21.3.0"
 playServicesLocationVersion = "21.1.0"
+playServicesMaps = "19.1.0"
 retrofit = "2.11.0"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
@@ -49,9 +51,11 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
+maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
 play-services-location-v2110 = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocationVersion" }
+play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 

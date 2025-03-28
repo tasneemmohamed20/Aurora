@@ -1,4 +1,4 @@
-package com.example.aurora.data.model.hourly_daily
+package com.example.aurora.data.model.forecast
 
 import com.google.gson.annotations.SerializedName
 

@@ -11,16 +11,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
 import com.example.aurora.home.HomeScreen
 import com.example.aurora.home.ForecastViewModel
+import com.example.aurora.map.MapScreen
 import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
+import kotlin.text.toDouble
+import kotlin.toString
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ForecastViewModel by viewModels {
@@ -69,6 +78,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
     val navController = rememberNavController()
+    val viewModel: ForecastViewModel = viewModel(
+        factory = ForecastViewModel.Factory(
+            WeatherRepositoryImp(RemoteDataSourceImp(), LocalContext.current),
+            LocationHelper(LocalContext.current),
+            WeatherWorkManager(LocalContext.current)
+        )
+    )
 //    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -79,7 +95,11 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
         ) {
             composable(Routes.HomeRoute.toString()) {
                 onScreenChange(true)
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToMap = { lat: Double, lon: Double ->
+                        navController.navigate(Routes.MapRoute(lat, lon).toString())
+                    }
+                )
             }
 
             composable(Routes.SplashRoute.toString()) {
@@ -89,6 +109,25 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                         navController.navigate(Routes.HomeRoute.toString()) {
                             popUpTo(Routes.SplashRoute.toString()) { inclusive = true }
                         }
+                    }
+                )
+            }
+
+            composable(
+                route = "map/{lat}/{lon}",
+                arguments = listOf(
+                    navArgument("lat") { type = NavType.FloatType },
+                    navArgument("lon") { type = NavType.FloatType }
+                )
+            ) { backStackEntry ->
+                val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 30.0444
+                val lon = backStackEntry.arguments?.getFloat("lon")?.toDouble() ?: 31.2357
+
+                MapScreen(
+                    location = Location(lat, lon),
+                    onLocationSelected = { location ->
+                        viewModel.updateLocation(location)
+                        navController.popBackStack()
                     }
                 )
             }

@@ -3,9 +3,12 @@ package com.example.aurora.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.aurora.data.model.hourly_daily.ForecastResponse
-import com.example.aurora.data.model.hourly_daily.ListItem
+import androidx.navigation.NavController
+import com.example.aurora.data.model.forecast.ForecastResponse
+import com.example.aurora.data.model.forecast.ListItem
+import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.repo.WeatherRepository
+import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 import com.example.aurora.workers.WorkerUtils
@@ -29,8 +32,12 @@ class ForecastViewModel(
     private val _cityName = MutableStateFlow<String?>(null)
     val cityName = _cityName.asStateFlow()
 
+    private val _location = MutableStateFlow<android.location.Location?>(null)
+    val location = _location.asStateFlow()
+
     init {
         initializeApp()
+
     }
 
     private fun initializeApp() {
@@ -61,6 +68,16 @@ class ForecastViewModel(
                 }
             } catch (e: Exception) {
                 _forecastState.value = ForecastUiState.Error("Failed to setup location updates: ${e.message}")
+            }
+        }
+    }
+
+    fun updateLocation(location: Location) {
+        viewModelScope.launch {
+            try {
+                fetchForecastData(location.lat, location.lng)
+            } catch (e: Exception) {
+                _forecastState.value = ForecastUiState.Error("Failed to update location: ${e.message}")
             }
         }
     }

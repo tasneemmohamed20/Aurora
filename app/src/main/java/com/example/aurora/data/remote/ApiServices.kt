@@ -1,6 +1,6 @@
 package com.example.aurora.data.remote
 
-import com.example.aurora.data.model.hourly_daily.ForecastResponse
+import com.example.aurora.data.model.forecast.ForecastResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

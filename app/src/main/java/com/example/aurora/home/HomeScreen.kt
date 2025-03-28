@@ -39,13 +39,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aurora.R
-import com.example.aurora.data.model.hourly_daily.ListItem
+import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
 import com.example.aurora.home.home_components.DailyForecast
 import com.example.aurora.home.home_components.HourlyForecast
 import com.example.aurora.home.home_components.MetricsCard
 import com.example.aurora.home.home_components.WindData
+import com.example.aurora.router.Routes
 import com.example.aurora.ui.theme.components.CustomAppBar
 import com.example.aurora.ui.theme.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
@@ -62,7 +63,9 @@ fun HomeScreen(
             LocationHelper(context),
             WeatherWorkManager(context)
         )
-    )
+    ),
+    onNavigateToMap: (Double, Double) -> Unit
+
 ) {
 //    val weatherState by currentWeatherViewModel.weatherState.collectAsState()
     val cityName by forecastViewModel.cityName.collectAsState()
@@ -109,7 +112,15 @@ fun HomeScreen(
                     }
                 },
                 leftIcon = {
-                    IconButton(onClick = { /* handle settings click */ }) {
+                    IconButton(onClick = {
+                        val currentLocation = forecastViewModel.location.value
+                        if (currentLocation != null) {
+                            onNavigateToMap(currentLocation.latitude, currentLocation.longitude)
+                        } else {
+                            // Fallback values if current location not available.
+                            onNavigateToMap(30.0444, 31.2357)
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Settings",

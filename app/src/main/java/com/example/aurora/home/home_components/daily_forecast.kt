@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aurora.data.model.hourly_daily.ListItem
+import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.utils.toDoubleOrZero
 import java.text.SimpleDateFormat
 import java.util.Locale

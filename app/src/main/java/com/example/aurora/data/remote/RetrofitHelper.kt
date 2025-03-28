@@ -13,3 +13,15 @@ object RetrofitClient {
             .build()
     }
 }
+
+object RetrofitGeoHelper{
+    private const val BASE_URL = "https://maps.googleapis.com/"
+
+    fun getRetrofit(): GeocodingApiService {
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        return retrofit.create(GeocodingApiService::class.java)
+    }
+}

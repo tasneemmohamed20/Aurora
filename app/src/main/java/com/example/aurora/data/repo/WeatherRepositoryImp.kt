@@ -2,7 +2,7 @@ package com.example.aurora.data.repo
 
 import android.content.Context
 import com.example.aurora.R
-import com.example.aurora.data.model.hourly_daily.ForecastResponse
+import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import kotlinx.coroutines.flow.Flow
 

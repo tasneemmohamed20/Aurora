@@ -3,7 +3,7 @@ package com.example.aurora.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.aurora.data.model.hourly_daily.ForecastResponse
+import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
 import kotlinx.coroutines.Dispatchers
