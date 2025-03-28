@@ -3,12 +3,10 @@ package com.example.aurora.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.repo.WeatherRepository
-import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 import com.example.aurora.workers.WorkerUtils

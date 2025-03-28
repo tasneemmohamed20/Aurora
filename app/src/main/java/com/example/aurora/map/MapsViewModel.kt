@@ -1,13 +1,11 @@
 package com.example.aurora.map
 
-import android.Manifest
-import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aurora.data.model.map.GeocodingResults
 import com.example.aurora.data.model.map.Location
-import com.example.aurora.data.remote.RetrofitGeoHelper
+import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MapsViewModel(
-    private val locationHelper: LocationHelper
+    private val locationHelper: LocationHelper,
+    private val weatherRepository: WeatherRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Initial)
@@ -42,27 +41,6 @@ class MapsViewModel(
         }
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    fun loadCurrentLocation() {
-        viewModelScope.launch {
-            _uiState.value = MapUiState.Loading
-            try {
-                val lastLocation = locationHelper.getLastKnownLocation()
-                val loc = if (lastLocation != null) {
-                    Location(lastLocation.latitude, lastLocation.longitude)
-                } else {
-                    Location(30.0444, 31.2357) // default coordinates
-                }
-                _location.value = loc
-                fetchAddress("${loc.lat},${loc.lng}")
-            } catch (e: SecurityException) {
-                _uiState.value = MapUiState.Error("Security Exception: ${e.message}")
-            } catch (e: Exception) {
-                _uiState.value = MapUiState.Error("Failed to retrieve current location: ${e.message}")
-            }
-        }
-    }
-
     fun updateLocation(location: Location) {
         _location.value = location
         fetchAddress("${location.lat},${location.lng}")
@@ -72,10 +50,11 @@ class MapsViewModel(
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
             try {
-                val key = "AIzaSyDz6_hjwIQjgeaJzmDLKzPGLmkbmJiTayQ"
-                val geocodingApi = RetrofitGeoHelper.getRetrofit()
-                val response = geocodingApi.getAddressFromGeocoding(latlng, apiKey = key)
-                _uiState.value = MapUiState.Success(response.results)
+                weatherRepository.getAddressFromGeocoding(latlng, "")
+                    .collect { address ->
+                        // Wrap the address string in GeocodingResults to satisfy uiState
+                        _uiState.value = MapUiState.Success(listOf(GeocodingResults(address)))
+                    }
             } catch (e: Exception) {
                 _uiState.value = MapUiState.Error("Failed to fetch address: ${e.message}")
             }
@@ -83,12 +62,13 @@ class MapsViewModel(
     }
 
     class Factory(
-        private val locationHelper: LocationHelper
+        private val locationHelper: LocationHelper,
+        private val weatherRepository: WeatherRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MapsViewModel::class.java)) {
-                return MapsViewModel(locationHelper) as T
+                return MapsViewModel(locationHelper, weatherRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

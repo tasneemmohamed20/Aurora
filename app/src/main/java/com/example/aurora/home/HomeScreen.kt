@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,7 +45,6 @@ import com.example.aurora.home.home_components.DailyForecast
 import com.example.aurora.home.home_components.HourlyForecast
 import com.example.aurora.home.home_components.MetricsCard
 import com.example.aurora.home.home_components.WindData
-import com.example.aurora.router.Routes
 import com.example.aurora.ui.theme.components.CustomAppBar
 import com.example.aurora.ui.theme.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
@@ -323,15 +321,15 @@ fun Humidity(humidity: Int) {
     )
 }
 
-@Composable
-fun testUI(){
-    FeelsLike(17.0)
-}
-
-@Preview
-@Composable
-fun HomeScreenPreview() {
-testUI()
-}
+//@Composable
+//fun testUI(){
+//    FeelsLike(17.0)
+//}
+//
+//@Preview
+//@Composable
+//fun HomeScreenPreview() {
+//testUI()
+//}
 
 

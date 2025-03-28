@@ -11,20 +11,7 @@ class WeatherRepositoryImp(
     context: Context
 ) : WeatherRepository {
     private val apiKey = context.getString(R.string.weather_api_key)
-
-//    override suspend fun getWeather(latitude: Double, longitude: Double): Flow<CurrentResponse> =
-//        remoteDataSource.getCurrentWeather(
-//            apiKey = apiKey,
-//            lat = latitude,
-//            lon = longitude,
-//            language = "en",
-//            units = "metric"
-//        )
-//            .catch { e ->
-//                Log.e("WeatherRepo", "Error fetching weather: ${e.message}")
-//                throw e
-//            }
-//            .flowOn(Dispatchers.IO)
+    private val geocodingApiKey = context.getString(R.string.MAPS_API_KEY)
 
     override suspend fun getForecast(
         latitude: Double,
@@ -37,5 +24,13 @@ class WeatherRepositoryImp(
             language = "en",
             units = "metric"
         )
+    }
+
+    override suspend fun getAddressFromGeocoding(
+        latlng: String,
+        apiKey: String
+    ): Flow<String> {
+        return remoteDataSource.getAddressFromGeocoding(latlng, geocodingApiKey)
+
     }
 }
