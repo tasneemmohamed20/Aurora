@@ -1,4 +1,4 @@
-package com.example.aurora.ui.theme.components
+package com.example.aurora.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme

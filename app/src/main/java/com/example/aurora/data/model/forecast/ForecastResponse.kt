@@ -1,9 +1,18 @@
 package com.example.aurora.data.model.forecast
 
+import androidx.annotation.NonNull
+import androidx.room.ColumnInfo
+import androidx.room.Embedded
+import androidx.room.Entity
 import com.google.gson.annotations.SerializedName
 
+@Entity(
+	tableName = "forecast_table",
+	primaryKeys = ["city_city_name"]
+)
 data class ForecastResponse(
-	val city: City? = null,
+	@Embedded(prefix = "city_") @NonNull
+	val city: City,
 	val cnt: Int? = null,
 	val cod: String? = null,
 	val message: Int? = null,
@@ -33,7 +42,8 @@ data class City(
 	val sunrise: Int? = null,
 	val timezone: Int? = null,
 	val sunset: Int? = null,
-	val name: String? = null,
+	@NonNull @ColumnInfo(name = "city_name")
+	val name: String,
 	val id: Int? = null,
 	val population: Int? = null
 )

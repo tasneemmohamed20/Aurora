@@ -34,15 +34,18 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun MapScreen(
     location: Location,
-    onLocationSelected: (Location) -> Unit
+    onLocationSelected: (Location) -> Unit,
+    viewModel : MapsViewModel
 ) {
     val context = LocalContext.current
-    val viewModel: MapsViewModel = viewModel(
-        factory = MapsViewModel.Factory(
-            LocationHelper(context),
-            WeatherRepositoryImp(RemoteDataSourceImp(), context)
-        )
-    )
+//    val viewModel: MapsViewModel = viewModel(
+//        factory = MapsViewModel.Factory(
+//            LocationHelper(context),
+//            WeatherRepositoryImp.getInstance(
+//                RemoteDataSourceImp.getInstance(context)
+//            )
+//        )
+//    )
 
     val uiState by viewModel.uiState.collectAsState()
     val currentLocation by viewModel.location.collectAsState()

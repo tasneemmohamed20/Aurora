@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class LocationHelper(private val context: Context) {
+class LocationHelper(internal val context: Context) {
     private val fusedClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
     private val _locationFlow = MutableStateFlow<Location?>(null)
     private var locationCallback: LocationCallback? = null

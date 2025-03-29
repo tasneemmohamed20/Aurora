@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,8 +46,8 @@ import com.example.aurora.home.home_components.DailyForecast
 import com.example.aurora.home.home_components.HourlyForecast
 import com.example.aurora.home.home_components.MetricsCard
 import com.example.aurora.home.home_components.WindData
-import com.example.aurora.ui.theme.components.CustomAppBar
-import com.example.aurora.ui.theme.components.MenuOptions
+import com.example.aurora.ui.components.CustomAppBar
+import com.example.aurora.ui.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
@@ -55,19 +56,29 @@ import com.example.aurora.workers.WeatherWorkManager
 @Composable
 fun HomeScreen(
     context: Context = LocalContext.current,
-    forecastViewModel: ForecastViewModel = viewModel(
-        factory = ForecastViewModel.Factory(
-            WeatherRepositoryImp(RemoteDataSourceImp(), context),
-            LocationHelper(context),
-            WeatherWorkManager(context)
-        )
-    ),
+    forecastViewModel: ForecastViewModel ,
+//    = viewModel(
+//        factory = ForecastViewModel.Factory(
+//            WeatherRepositoryImp.getInstance(
+//                RemoteDataSourceImp(),
+//                LocalDataSource.getInstance(context),      // Local data source instance
+//                context                                    // Application context
+//            ),
+//            LocationHelper(context),
+//            WeatherWorkManager(context)
+//        )
+//    ),
     onNavigateToMap: (Double, Double) -> Unit
 
 ) {
 //    val weatherState by currentWeatherViewModel.weatherState.collectAsState()
     val cityName by forecastViewModel.cityName.collectAsState()
     val forecastState by forecastViewModel.forecastState.collectAsState()
+
+    val configuration = LocalConfiguration.current
+    LaunchedEffect(configuration) {
+        forecastViewModel.onConfigurationChanged()
+    }
 
     LaunchedEffect(Unit) {
 //        currentWeatherViewModel.setupLocationUpdates()

@@ -1,4 +1,4 @@
-package com.example.aurora.ui.theme.components
+package com.example.aurora.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 fun CustomAppBar(
     modifier: Modifier = Modifier,
     title: String,
-    rightIcon: @Composable () -> Unit,
+    rightIcon: @Composable () -> Unit? = { null },
     leftIcon: (@Composable () -> Unit)? = null,
 
 ) {

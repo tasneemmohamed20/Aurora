@@ -8,6 +8,7 @@ import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.LocationHelper
+import com.example.aurora.utils.hasNetworkConnection
 import com.example.aurora.workers.WeatherWorkManager
 import com.example.aurora.workers.WorkerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,6 @@ class ForecastViewModel(
 
     init {
         initializeApp()
-
     }
 
     private fun initializeApp() {
@@ -82,20 +82,47 @@ class ForecastViewModel(
 
     private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
         try {
-            repository.getForecast(latitude, longitude).collect { response ->
-                if (response.cod == "200") {
-                    val processedData = processHourlyData(response)
-                    _forecastState.value = ForecastUiState.Success(processedData)
-                    _cityName.value = response.city?.name
-                } else {
-                    _forecastState.value = ForecastUiState.Error("API Error: ${response.cod}")
+            val isConnected = locationHelper.context.hasNetworkConnection()
+
+            if (isConnected) {
+                try {
+                    // Try API call first
+                    repository.getForecast(latitude, longitude).collect { response ->
+                        if (response.cod == "200") {
+                            // Cache the response in Room
+                            repository.insertForecast(response)
+                            val processedData = processHourlyData(response)
+                            _forecastState.value = ForecastUiState.Success(processedData)
+                            _cityName.value = response.city.name
+                        } else {
+                            // If API returns error, fall back to database
+                            getForecastFromDatabase()
+                        }
+                    }
+                } catch (_: Exception) {
+                    // If API call fails, fall back to database
+                    getForecastFromDatabase()
                 }
+            } else {
+                getForecastFromDatabase()
             }
         } catch (e: Exception) {
             _forecastState.value = ForecastUiState.Error("Failed to load forecast data: ${e.message}")
         }
     }
 
+    private suspend fun getForecastFromDatabase() {
+        repository.getAllForecasts().collect { forecasts ->
+            if (forecasts.isNotEmpty()) {
+                val latestForecast = forecasts.last()
+                val processedData = processHourlyData(latestForecast)
+                _forecastState.value = ForecastUiState.Success(processedData)
+                _cityName.value = latestForecast.city.name
+            } else {
+                _forecastState.value = ForecastUiState.Error("No cached data available")
+            }
+        }
+    }
     private fun processHourlyData(response: ForecastResponse): MutableList<ListItem> {
         val hourlyDataList = mutableListOf<ListItem>()
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -121,6 +148,24 @@ class ForecastViewModel(
             }
         }
         return hourlyDataList
+    }
+
+    fun onConfigurationChanged() {
+        // Store current location before setting loading state
+        val currentLocation = _location.value
+
+        _forecastState.value = ForecastUiState.Loading
+
+        // Only fetch if we have a location
+        currentLocation?.let { loc ->
+            viewModelScope.launch {
+                try {
+                    fetchForecastData(loc.latitude, loc.longitude)
+                } catch (e: Exception) {
+                    _forecastState.value = ForecastUiState.Error("Failed to refresh data: ${e.message}")
+                }
+            }
+        }
     }
 
     override fun onCleared() {

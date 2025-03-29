@@ -19,20 +19,30 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.aurora.data.local.AppDatabase
+import com.example.aurora.data.local.LocalDataSourceImp
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
 import com.example.aurora.home.ForecastViewModel
 import com.example.aurora.home.HomeScreen
 import com.example.aurora.map.MapScreen
+import com.example.aurora.map.MapsViewModel
 import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
+import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ForecastViewModel by viewModels {
         ForecastViewModel.Factory(
-            WeatherRepositoryImp(RemoteDataSourceImp(), this),
+            WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(
+                    AppDatabase.getInstance(this).getForecastDao()
+                ),
+                this
+            ),
             LocationHelper(this),
             WeatherWorkManager(this)
         )
@@ -71,16 +81,43 @@ class MainActivity : ComponentActivity() {
         }
         requestLocationPermission()
     }
+
+    override fun onResume() {
+        super.onResume()
+        enableEdgeToEdge()
+    }
+
+
 }
 
 @Composable
 fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
     val navController = rememberNavController()
-    val viewModel: ForecastViewModel = viewModel(
+    val context = LocalContext.current
+    val forecastViewModel: ForecastViewModel = viewModel(
         factory = ForecastViewModel.Factory(
-            WeatherRepositoryImp(RemoteDataSourceImp(), LocalContext.current),
-            LocationHelper(LocalContext.current),
-            WeatherWorkManager(LocalContext.current)
+            WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(
+                    AppDatabase.getInstance(context).getForecastDao()
+                ),
+                context
+            ),
+            LocationHelper(context),
+            WeatherWorkManager(context)
+        )
+    )
+
+    val mapsViewModel : MapsViewModel = viewModel(
+        factory = MapsViewModel.Factory(
+            LocationHelper(context),
+            WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(
+                    AppDatabase.getInstance(context).getForecastDao()
+                ),
+                context
+            )
         )
     )
 //    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -94,6 +131,7 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             composable(Routes.HomeRoute.toString()) {
                 LaunchedEffect(Unit) { onScreenChange(true) }
                 HomeScreen(
+                    forecastViewModel = forecastViewModel,
                     onNavigateToMap = { lat: Double, lon: Double ->
                         navController.navigate(Routes.MapRoute(lat, lon).toString())
                     }
@@ -124,9 +162,10 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 MapScreen(
                     location = Location(lat, lon),
                     onLocationSelected = { location ->
-                        viewModel.updateLocation(location)
+                        forecastViewModel.updateLocation(location)
                         navController.popBackStack()
-                    }
+                    },
+                    viewModel= mapsViewModel
                 )
             }
         }
