@@ -3,5 +3,6 @@
     <string name="title_activity_splash_screen">SplashScreen</string>
     <string name="title_activity_home_screen">HomeScreen</string>
     <string name="weather_api_key">97ad72691a7bd2c8f56c772da5029512</string>
-    <string name="MAPS_API_KEY">AIzaSyDz6_hjwIQjgeaJzmDLKzPGLmkbmJiTayQ</string>
+<!--    <string name="MAPS_API_KEY">AIzaSyDz6_hjwIQjgeaJzmDLKzPGLmkbmJiTayQ</string> // mine-->
+    <string name="MAPS_API_KEY">AIzaSyB9cRwZcC2Kirk3Fy2sCEtPUv3zIqRn6Jk</string> <!-- Reda's one-->
 </resources>

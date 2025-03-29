@@ -76,11 +76,16 @@ dependencies {
 
     implementation(libs.compose)
 
+    implementation(libs.places)
+
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
 
     implementation (libs.gson)
+
+    implementation (libs.material)
+    implementation (libs.material3)
 
 
     testImplementation(libs.junit)

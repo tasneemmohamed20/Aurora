@@ -1,6 +1,5 @@
 package com.example.aurora.ui.components
 
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,14 +16,14 @@ import androidx.compose.ui.unit.Dp
 
 @ExperimentalMaterial3Api
 @Composable
-fun SearchBar(
+fun CustomSearchBar(
     state: SearchBarState,
-    inputField: @Composable () -> Unit,
+    inputField: @Composable (() -> Unit),
     modifier: Modifier = Modifier,
     shape: Shape = SearchBarDefaults.inputFieldShape,
     colors: SearchBarColors = SearchBarDefaults.colors(),
     tonalElevation: Dp = SearchBarDefaults.TonalElevation,
-    shadowElevation: Dp = SearchBarDefaults.ShadowElevation,
+    shadowElevation: Dp,
 ) {
     SearchBar(
         inputField = {
@@ -64,25 +63,25 @@ data class SearchBarState(
     val onActiveChange: (Boolean) -> Unit
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TestSearchBar() {
-    val state = SearchBarState(
-        query = "",
-        active = false,
-        onQueryChange = { },
-        onActiveChange = { }
-    )
-    SearchBar(
-        state = state,
-        inputField = { /* Your input field here */ },
-
-    )
-}
-
-
-@Preview
-@Composable
-fun PreviewSearchBar() {
-    TestSearchBar()
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun TestSearchBar() {
+//    val state = SearchBarState(
+//        query = "",
+//        active = false,
+//        onQueryChange = { },
+//        onActiveChange = { }
+//    )
+//    CustomSearchBar(
+//        state = state,
+//        inputField = { /* Your input field here */ },
+//
+//    )
+//}
+//
+//
+//@Preview
+//@Composable
+//fun PreviewSearchBar() {
+//    TestSearchBar()
+//}

@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,23 +31,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aurora.ui.components.CustomAppBar
-import com.example.aurora.ui.components.SearchBar
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
-import kotlin.toString
 
-data class FavoriteItem(
-    val city: String,
-    val maxTemp: String,
-    val minTemp: String,
-    val currentTemp: Double
-)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoriteScreen(
@@ -59,7 +51,7 @@ fun FavoriteScreen(
     val uiState = viewModel.uiState.collectAsState().value
     val queryState = remember { mutableStateOf("") }
     val activeState = remember { mutableStateOf(false) }
-    val searchBarState = SearchBarState(
+    SearchBarState(
         query = queryState.value,
         active = activeState.value,
         onQueryChange = { newQuery -> queryState.value = newQuery },
@@ -83,12 +75,6 @@ fun FavoriteScreen(
                 }
             }
         )
-
-//        SearchBar(
-//            state = searchBarState,
-//            inputField = { },
-//            modifier = Modifier.padding(horizontal = 16.dp)
-//        )
 
         Card(
             modifier = Modifier
@@ -160,17 +146,13 @@ fun FavoriteCard(
     currentTemp: Double,
     modifier: Modifier = Modifier
 ) {
-
-    var isDark : Boolean = isSystemInDarkTheme()
-    var background = gradientBrush(isDark)
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)), // Adjusted to match the UI
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
             .height(80.dp)
-            .background(Color.White.copy(alpha = 0.1f)),
     ) {
         Row(
             modifier = Modifier
@@ -187,7 +169,6 @@ fun FavoriteCard(
                     color = Color.White
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Row {
                     Text(
                         text = "$maxTemp /",
@@ -196,12 +177,11 @@ fun FavoriteCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "$minTemp ",
+                        text = minTemp,
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.8f)
                     )
                 }
-
             }
             Text(
                 text = "$currentTemp°",
@@ -213,13 +193,19 @@ fun FavoriteCard(
     }
 }
 
-//@Composable
-//fun TestUi() {
-//    FavoriteScreen()
-//}
-//
-//@Preview
-//@Composable
-//fun WeatherCardPreview() {
-//    TestUi()
-//}
+@Composable
+fun TestUi() {
+    FavoriteCard(
+        city = "New York",
+        maxTemp = "30°",
+        minTemp = "20°",
+        currentTemp = 25.0,
+        modifier = Modifier.padding(16.dp)
+    )
+}
+
+@Preview
+@Composable
+fun WeatherCardPreview() {
+    TestUi()
+}

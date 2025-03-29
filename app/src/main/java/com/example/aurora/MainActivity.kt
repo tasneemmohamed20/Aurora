@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +34,8 @@ import com.example.aurora.map.MapsViewModel
 import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
+import com.google.android.libraries.places.api.Places
+import com.google.maps.android.ktx.BuildConfig
 import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
@@ -96,6 +99,16 @@ class MainActivity : ComponentActivity() {
 fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val placesClient = remember {
+        try {
+            Places.createClient(context)
+        } catch (e: IllegalStateException) {
+            Places.initialize(context,
+                context.resources.getString(R.string.MAPS_API_KEY),
+                )
+            Places.createClient(context)
+        }
+    }
     val forecastViewModel: ForecastViewModel = viewModel(
         factory = ForecastViewModel.Factory(
             WeatherRepositoryImp.getInstance(
@@ -119,7 +132,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
                 context
-            )
+            ),
+            placesClient
         )
     )
 
