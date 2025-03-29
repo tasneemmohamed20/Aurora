@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,11 +20,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +41,7 @@ import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.SearchBar
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
+import kotlin.toString
 
 data class FavoriteItem(
     val city: String,
@@ -44,17 +49,14 @@ data class FavoriteItem(
     val minTemp: String,
     val currentTemp: Double
 )
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavoriteScreen() {
-    val favorites = listOf(
-        FavoriteItem("New York", "30°", "20°", 25.0),
-        FavoriteItem("London", "28°", "18°", 22.0),
-        FavoriteItem("Tokyo", "32°", "25°", 27.0)
-    )
-
-    // Remember state for the search bar
+fun FavoriteScreen(
+    viewModel: FavViewModel,
+    onBackClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
+    val uiState = viewModel.uiState.collectAsState().value
     val queryState = remember { mutableStateOf("") }
     val activeState = remember { mutableStateOf(false) }
     val searchBarState = SearchBarState(
@@ -65,14 +67,14 @@ fun FavoriteScreen() {
     )
 
     Column(
-        modifier = Modifier.fillMaxSize()
-    .background(gradientBrush(isSystemInDarkTheme()))
+        modifier = Modifier
+            .fillMaxSize()
+            .background(gradientBrush(isSystemInDarkTheme()))
     ) {
-        // Custom AppBar at top
         CustomAppBar(
             title = "Favorites",
             leftIcon = {
-                IconButton(onClick = {}){
+                IconButton(onClick = onBackClick) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
@@ -81,21 +83,69 @@ fun FavoriteScreen() {
                 }
             }
         )
-        // Search bar immediately after the app bar
-        SearchBar(
-            state = searchBarState,
-            inputField = { /* Additional content can be added here if needed */ },
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        // LazyColumn with FavoriteCard items
-        LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
-            items(favorites) { favorite ->
-                FavoriteCard(
-                    city = favorite.city,
-                    maxTemp = favorite.maxTemp,
-                    minTemp = favorite.minTemp,
-                    currentTemp = favorite.currentTemp,
-                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+
+//        SearchBar(
+//            state = searchBarState,
+//            inputField = { },
+//            modifier = Modifier.padding(horizontal = 16.dp)
+//        )
+
+        Card(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            onClick = onSearchClick,
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Search for a city...",
+                    color = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        when (uiState) {
+            is FavUiState.Loading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize()
+                )
+            }
+            is FavUiState.Success -> {
+                val forecasts = (uiState as FavUiState.Success).forecasts
+                LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
+                    items(forecasts) { forecast ->
+                        // Safe extraction of temperature values
+                        val firstItem = forecast.list?.firstOrNull()
+                        val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() ?:
+                        forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
+                        val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() ?:
+                        forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
+                        val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
+
+                        FavoriteCard(
+                            city = forecast.city.name,
+                            maxTemp = "$maxTemp°",
+                            minTemp = "$minTemp°",
+                            currentTemp = currentTemp,
+                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                        )
+                    }
+                }
+            }
+            is FavUiState.Error -> {
+                Text(
+                    text = (uiState as FavUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
@@ -163,13 +213,13 @@ fun FavoriteCard(
     }
 }
 
-@Composable
-fun TestUi() {
-    FavoriteScreen()
-}
-
-@Preview
-@Composable
-fun WeatherCardPreview() {
-    TestUi()
-}
+//@Composable
+//fun TestUi() {
+//    FavoriteScreen()
+//}
+//
+//@Preview
+//@Composable
+//fun WeatherCardPreview() {
+//    TestUi()
+//}

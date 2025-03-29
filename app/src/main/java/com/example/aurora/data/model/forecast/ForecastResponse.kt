@@ -59,7 +59,8 @@ data class Clouds(
 
 data class Main(
 	val temp: Any? = null,
-	val tempMin: Any? = null,
+	@SerializedName("temp_min")
+	val tempMin: Double? = null,
 	val grndLevel: Int? = null,
 	val tempKf: Int? = null,
 	val humidity: Int? = null,
@@ -67,7 +68,8 @@ data class Main(
 	val seaLevel: Int? = null,
 	@SerializedName("feels_like")
 	val feelsLike: Any? = null,
-	val tempMax: Any? = null
+	@SerializedName("temp_max")
+	val tempMax: Double? = null
 )
 
 data class Wind(

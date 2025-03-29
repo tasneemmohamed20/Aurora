@@ -37,11 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aurora.R
 import com.example.aurora.data.model.forecast.ListItem
-import com.example.aurora.data.remote.RemoteDataSourceImp
-import com.example.aurora.data.repo.WeatherRepositoryImp
 import com.example.aurora.home.home_components.DailyForecast
 import com.example.aurora.home.home_components.HourlyForecast
 import com.example.aurora.home.home_components.MetricsCard
@@ -49,26 +46,13 @@ import com.example.aurora.home.home_components.WindData
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
-import com.example.aurora.utils.LocationHelper
-import com.example.aurora.workers.WeatherWorkManager
 
 
 @Composable
 fun HomeScreen(
     context: Context = LocalContext.current,
-    forecastViewModel: ForecastViewModel ,
-//    = viewModel(
-//        factory = ForecastViewModel.Factory(
-//            WeatherRepositoryImp.getInstance(
-//                RemoteDataSourceImp(),
-//                LocalDataSource.getInstance(context),      // Local data source instance
-//                context                                    // Application context
-//            ),
-//            LocationHelper(context),
-//            WeatherWorkManager(context)
-//        )
-//    ),
-    onNavigateToMap: (Double, Double) -> Unit
+    forecastViewModel: ForecastViewModel,
+    onNavigateToFav: () -> Unit
 
 ) {
 //    val weatherState by currentWeatherViewModel.weatherState.collectAsState()
@@ -121,15 +105,7 @@ fun HomeScreen(
                     }
                 },
                 leftIcon = {
-                    IconButton(onClick = {
-                        val currentLocation = forecastViewModel.location.value
-                        if (currentLocation != null) {
-                            onNavigateToMap(currentLocation.latitude, currentLocation.longitude)
-                        } else {
-                            // Fallback values if current location not available.
-                            onNavigateToMap(30.0444, 31.2357)
-                        }
-                    }) {
+                    IconButton(onClick = onNavigateToFav) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Settings",

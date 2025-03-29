@@ -24,6 +24,8 @@ import com.example.aurora.data.local.LocalDataSourceImp
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
+import com.example.aurora.favorites.FavViewModel
+import com.example.aurora.favorites.FavoriteScreen
 import com.example.aurora.home.ForecastViewModel
 import com.example.aurora.home.HomeScreen
 import com.example.aurora.map.MapScreen
@@ -120,7 +122,18 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             )
         )
     )
-//    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    val favViewModel: FavViewModel = viewModel(
+        factory = FavViewModel.Factory(
+            WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(
+                    AppDatabase.getInstance(context).getForecastDao()
+                ),
+                context
+            )
+        )
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -132,8 +145,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LaunchedEffect(Unit) { onScreenChange(true) }
                 HomeScreen(
                     forecastViewModel = forecastViewModel,
-                    onNavigateToMap = { lat: Double, lon: Double ->
-                        navController.navigate(Routes.MapRoute(lat, lon).toString())
+                    onNavigateToFav = {
+                        navController.navigate(Routes.FavoritesRoute.toString())
                     }
                 )
             }
@@ -165,7 +178,20 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                         forecastViewModel.updateLocation(location)
                         navController.popBackStack()
                     },
-                    viewModel= mapsViewModel
+                    viewModel = mapsViewModel
+                )
+            }
+
+            composable(Routes.FavoritesRoute.toString()) {
+                FavoriteScreen(
+                    viewModel = favViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onSearchClick = {
+                        val currentLocation = mapsViewModel.location.value
+                        val lat = currentLocation?.lat ?: 30.0444
+                        val lon = currentLocation?.lng ?: 31.2357
+                        navController.navigate(Routes.MapRoute(lat, lon).toString())
+                    }
                 )
             }
         }
