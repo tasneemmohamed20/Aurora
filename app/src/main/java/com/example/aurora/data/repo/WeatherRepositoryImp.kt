@@ -8,6 +8,8 @@ import com.example.aurora.data.local.LocalDataSource
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.remote.RemoteDataSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 
 class WeatherRepositoryImp private constructor(
     private val remoteDataSource: RemoteDataSource,
@@ -32,7 +34,13 @@ class WeatherRepositoryImp private constructor(
             lon = longitude,
             language = currentLocale,
             units = "metric"
-        )
+        ).map { response ->
+            // Preserve isHome flag when updating existing forecast
+            localDataSource.getAllForecasts().firstOrNull()?.let { forecasts ->
+                val existingForecast = forecasts.find { it.city.name == response.city.name }
+                response.copy(isHome = existingForecast?.isHome == true)
+            } ?: response
+        }
     }
 
     override suspend fun getAddressFromGeocoding(
@@ -47,7 +55,35 @@ class WeatherRepositoryImp private constructor(
     }
 
     override suspend fun insertForecast(forecast: ForecastResponse): Long {
-        return localDataSource.insertForecast(forecast)
+        val existingForecasts = localDataSource.getAllForecasts().firstOrNull() ?: emptyList()
+
+        // Create a copy of the forecast with the correct isHome status
+        val forecastToInsert = if (forecast.isHome) {
+            // If this is meant to be home, ensure isHome is true
+            forecast.copy(isHome = true)
+        } else {
+            // If not meant to be home, preserve existing home status if it exists
+            val existingForecast = existingForecasts.find { it.city.name == forecast.city.name }
+            forecast.copy(isHome = existingForecast?.isHome == true)
+        }
+
+        // If setting a new home, unmark any other home locations
+        if (forecastToInsert.isHome) {
+            existingForecasts
+                .filter { it.isHome && it.city.name != forecastToInsert.city.name }
+                .forEach { oldHomeForecast ->
+                    localDataSource.deleteForecast(oldHomeForecast)
+                    localDataSource.insertForecast(oldHomeForecast.copy(isHome = false))
+                }
+        }
+
+        // Delete existing forecast if it exists
+        existingForecasts
+            .find { it.city.name == forecastToInsert.city.name }
+            ?.let { localDataSource.deleteForecast(it) }
+
+        // Insert the new forecast
+        return localDataSource.insertForecast(forecastToInsert)
     }
 
     override suspend fun deleteForecast(forecast: ForecastResponse): Int {

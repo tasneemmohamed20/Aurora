@@ -1,5 +1,11 @@
 package com.example.aurora.ui.components
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -11,10 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
-@ExperimentalMaterial3Api
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomSearchBar(
     state: SearchBarState,
@@ -23,7 +29,7 @@ fun CustomSearchBar(
     shape: Shape = SearchBarDefaults.inputFieldShape,
     colors: SearchBarColors = SearchBarDefaults.colors(),
     tonalElevation: Dp = SearchBarDefaults.TonalElevation,
-    shadowElevation: Dp,
+    shadowElevation: Dp = SearchBarDefaults.TonalElevation,
 ) {
     SearchBar(
         inputField = {
@@ -41,7 +47,7 @@ fun CustomSearchBar(
                         contentDescription = "Search"
                     )
                 },
-                trailingIcon = null,
+                trailingIcon = null
             )
         },
         expanded = state.active,
@@ -51,9 +57,18 @@ fun CustomSearchBar(
         colors = colors,
         tonalElevation = tonalElevation,
         shadowElevation = shadowElevation,
-        windowInsets = SearchBarDefaults.windowInsets,
-        content = { inputField() }
-    )
+        windowInsets = SearchBarDefaults.windowInsets
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 300.dp) // Limit maximum height
+        ) {
+            item {
+                inputField()
+            }
+        }
+    }
 }
 
 data class SearchBarState(
@@ -62,26 +77,3 @@ data class SearchBarState(
     val onQueryChange: (String) -> Unit,
     val onActiveChange: (Boolean) -> Unit
 )
-
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun TestSearchBar() {
-//    val state = SearchBarState(
-//        query = "",
-//        active = false,
-//        onQueryChange = { },
-//        onActiveChange = { }
-//    )
-//    CustomSearchBar(
-//        state = state,
-//        inputField = { /* Your input field here */ },
-//
-//    )
-//}
-//
-//
-//@Preview
-//@Composable
-//fun PreviewSearchBar() {
-//    TestSearchBar()
-//}

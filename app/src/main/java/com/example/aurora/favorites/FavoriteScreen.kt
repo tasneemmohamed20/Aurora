@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,9 +53,11 @@ import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.utils.toDoubleOrZero
 import kotlin.toString
@@ -68,6 +71,7 @@ fun FavoriteScreen(
     onFavoriteClicked: (Location) -> Unit
 ) {
     val uiState = viewModel.uiState.collectAsState().value
+
     val queryState = remember { mutableStateOf("") }
     val activeState = remember { mutableStateOf(false) }
 
@@ -111,7 +115,37 @@ fun FavoriteScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(forecasts) { forecast ->
+                    val homeLocation = forecasts.find { it.isHome }
+                    val otherLocations = forecasts.filterNot { it.isHome }
+
+                    homeLocation?.let { forecast ->
+                        item {
+                            val firstItem = forecast.list?.firstOrNull()
+                            val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                                ?: forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
+                            val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                                ?: forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
+                            val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
+
+                            SwipeableFavoriteCard(
+                                city = forecast.city.name,
+                                maxTemp = "$maxTemp°",
+                                minTemp = "$minTemp°",
+                                currentTemp = currentTemp,
+                                isHome = true,
+                                onDelete = { viewModel.deleteFavorite(forecast) },
+                                onClick = {
+                                    onFavoriteClicked(Location(
+                                        forecast.city.coord?.lat.toDoubleOrZero(),
+                                        forecast.city.coord?.lon.toDoubleOrZero()
+                                    ))
+                                },
+                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                            )
+                        }
+                    }
+
+                    items(otherLocations) { forecast ->
                         val firstItem = forecast.list?.firstOrNull()
                         val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
                             ?: forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
@@ -124,6 +158,7 @@ fun FavoriteScreen(
                             maxTemp = "$maxTemp°",
                             minTemp = "$minTemp°",
                             currentTemp = currentTemp,
+                            isHome = false,
                             onDelete = { viewModel.deleteFavorite(forecast) },
                             onClick = {
                                 onFavoriteClicked(Location(
@@ -171,19 +206,43 @@ fun SwipeableFavoriteCard(
     maxTemp: String,
     minTemp: String,
     currentTemp: Double,
+    isHome: Boolean = false,
     onDelete: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showHomeWarningDialog by remember { mutableStateOf(false) }
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue: SwipeToDismissBoxValue ->
             if (dismissValue != SwipeToDismissBoxValue.EndToStart) {
-                showDeleteDialog = true
+                if (isHome) {
+                    showHomeWarningDialog = true
+                } else {
+                    showDeleteDialog = true
+                }
             }
             false
         }
     )
+
+    if (showHomeWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showHomeWarningDialog = false },
+            title = { Text("Cannot Delete Home") },
+            text = { Text("The home location cannot be deleted. Please set another location as home first if you want to remove this one.") },
+            confirmButton = {
+                Button(
+                    onClick = { showHomeWarningDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -224,6 +283,7 @@ fun SwipeableFavoriteCard(
             city = city,
             maxTemp = maxTemp,
             minTemp = minTemp,
+            isHome = isHome,
             currentTemp = currentTemp,
             onClick = onClick,
             modifier = modifier
@@ -231,14 +291,16 @@ fun SwipeableFavoriteCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoriteCard(
+    modifier: Modifier = Modifier,
     city: String,
     maxTemp: String,
     minTemp: String,
     currentTemp: Double,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    isHome: Boolean = false
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -256,26 +318,44 @@ fun FavoriteCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = city,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row {
-                    Text(
-                        text = "$maxTemp /",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = minTemp,
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = city,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        if (isHome) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Home Location",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row {
+                        Text(
+                            text = "$maxTemp /",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = minTemp,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
             Text(

@@ -98,7 +98,7 @@ class LocationHelper(internal val context: Context) {
         locationCallback = null
     }
 
-    suspend fun getCurrentLocation(): android.location.Location? = suspendCoroutine { continuation ->
+    suspend fun getCurrentLocation(): Location? = suspendCoroutine { continuation ->
         try {
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
             if (hasLocationPermission()) {
@@ -112,7 +112,7 @@ class LocationHelper(internal val context: Context) {
             } else {
                 continuation.resume(null)
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             continuation.resume(null)
         }
     }

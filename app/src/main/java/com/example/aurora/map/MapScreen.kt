@@ -69,7 +69,10 @@ fun MapScreen(
             text = { Text("Would you like to add this location to favorites?") },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.addToFavorites() },
+                    onClick = {
+                        viewModel.addToFavorites()
+                        currentLocation?.let { onLocationSelected(it) }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
@@ -149,6 +152,7 @@ fun MapScreen(
                 onMapClick = { latLng ->
                     markerState.position = latLng
                     viewModel.updateLocation(Location(latLng.latitude, latLng.longitude))
+                    viewModel.openDialog()
                 }
             ) {
                 Marker(
@@ -172,14 +176,24 @@ fun MapScreen(
                     }
                 }
                 is MapUiState.Error -> {
-                    Text(
-                        text = (uiState as MapUiState.Error).message,
+                    Column(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = (uiState as MapUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Button(
+                            onClick = { viewModel.retryLocationUpdate() },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text("Retry")
+                        }
+                    }
                 }
                 else -> Unit
             }

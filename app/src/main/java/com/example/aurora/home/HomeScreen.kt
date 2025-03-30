@@ -56,15 +56,13 @@ fun HomeScreen(
     forecastViewModel: ForecastViewModel,
     onNavigateToFav: () -> Unit
 ) {
+
+    LaunchedEffect(Unit) {
+        forecastViewModel.resetToCurrentLocation()
+    }
     val cityName by forecastViewModel.cityName.collectAsState()
     val forecastState by forecastViewModel.forecastState.collectAsState()
     val showHomeDialog by forecastViewModel.homeDialogVisible.collectAsState()
-
-    LaunchedEffect(Unit) {
-        if (forecastViewModel.shouldUseCurrentLocation) {
-            forecastViewModel.onReturnFromFavorites()
-        }
-    }
 
     if (showHomeDialog) {
         AlertDialog(

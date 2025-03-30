@@ -12,6 +12,7 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,20 +44,43 @@ class MapsViewModel(
 
 
     init {
-        if (locationHelper.hasLocationPermission()) {
-            viewModelScope.launch {
-                // Get location once
+        viewModelScope.launch {
+            // Increase delay to ensure permission status is updated
+            delay(2000)
+            getCurrentLocation()
+        }
+    }
+
+    fun openDialog() {
+        _showDialog.value = true
+    }
+
+    private fun getCurrentLocation() {
+        viewModelScope.launch {
+            if (locationHelper.hasLocationPermission()) {
                 locationHelper.getCurrentLocation()?.let { loc ->
                     val newLoc = Location(loc.latitude, loc.longitude)
                     _location.value = newLoc
                     fetchAddress("${newLoc.lat},${newLoc.lng}")
                 } ?: run {
-                    _uiState.value = MapUiState.Error("Could not get current location")
+                    // Try getting last known location as fallback
+                    locationHelper.getLastKnownLocation()?.let { lastLoc ->
+                        val newLoc = Location(lastLoc.latitude, lastLoc.longitude)
+                        _location.value = newLoc
+                        fetchAddress("${newLoc.lat},${newLoc.lng}")
+                    } ?: run {
+                        _uiState.value = MapUiState.Error("Could not get current location")
+                    }
                 }
+            } else {
+                _uiState.value = MapUiState.Error("Location permission not granted")
             }
-        } else {
-            _uiState.value = MapUiState.Error("Location permission not granted")
         }
+    }
+
+    // Add method to retry getting location
+    fun retryLocationUpdate() {
+        getCurrentLocation()
     }
 
     fun updateLocation(location: Location) {

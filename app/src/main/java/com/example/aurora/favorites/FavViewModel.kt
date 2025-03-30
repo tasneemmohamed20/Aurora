@@ -36,6 +36,11 @@ class FavViewModel(private val repository: WeatherRepository) : ViewModel() {
 
     fun deleteFavorite(forecast: ForecastResponse) {
         viewModelScope.launch {
+            // Prevent deletion if the forecast is marked as home.
+            if (forecast.isHome) {
+                // Optionally you can update UI state here with an error message.
+                return@launch
+            }
             repository.deleteForecast(forecast)
         }
     }

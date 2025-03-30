@@ -1,7 +1,6 @@
 package com.example.aurora.home
 
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -20,7 +19,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.apply
+import androidx.core.content.edit
 
 class ForecastViewModel(
     private val repository: WeatherRepository,
@@ -28,33 +27,29 @@ class ForecastViewModel(
     private val weatherWorkManager: WeatherWorkManager
 ) : ViewModel() {
 
+    companion object {
+        private const val LAST_KNOWN_LOCATION_KEY = "last_known_location"
+        private const val HAS_SET_HOME_KEY = "has_set_home_for_location"
+        private const val HAS_ASKED_HOME_KEY = "has_asked_for_home"
+    }
+
     private val _forecastState = MutableStateFlow<ForecastUiState>(ForecastUiState.Loading)
     val forecastState = _forecastState.asStateFlow()
 
     private val _cityName = MutableStateFlow<String?>(null)
     val cityName = _cityName.asStateFlow()
 
-    // Hold the latest forecast response for marking as home
-    private var currentForecastResponse: ForecastResponse? = null
-
     private val _location = MutableStateFlow<android.location.Location?>(null)
 
-    private val sharedPrefs = locationHelper.context.getSharedPreferences("app_prefs", 0)
-    private val hasAskedForHomeKey = "has_asked_for_home"
-    private val lastKnownLocationKey = "last_known_location"
-    private val hasSetHomeForLocationKey = "has_set_home_for_location"
-
-    var shouldUseCurrentLocation = true
-    private val _selectedLocation = MutableStateFlow<Location?>(null)
-
-
-    // Update homeDialogVisible to private
     private val _homeDialogVisible = MutableStateFlow(false)
     val homeDialogVisible = _homeDialogVisible.asStateFlow()
 
-    private var isReturningFromFavorites = false
-    private var isFromFavorites = false
-    private var isFetchingData = false
+    private val sharedPrefs = locationHelper.context.getSharedPreferences("app_prefs", 0)
+    private var currentForecastResponse: ForecastResponse? = null
+    var shouldUseCurrentLocation = true
+
+    private val _cachedLocation = MutableStateFlow<Location?>(null)
+    val cachedLocation = _cachedLocation.asStateFlow()
 
 
     init {
@@ -70,7 +65,16 @@ class ForecastViewModel(
     }
 
     fun resetToCurrentLocation() {
-        shouldUseCurrentLocation = true
+        viewModelScope.launch {
+            _cachedLocation.value?.let { location ->
+                fetchForecastData(location.lat, location.lng)
+            } ?: run {
+                shouldUseCurrentLocation = true
+                locationHelper.getCurrentLocation()?.let { location ->
+                    fetchForecastData(location.latitude, location.longitude)
+                }
+            }
+        }
     }
 
     fun setupLocationUpdates() {
@@ -84,29 +88,24 @@ class ForecastViewModel(
                 locationHelper.startLocationUpdates()
                 locationHelper.getLocationUpdates().collect { location ->
                     location?.let {
-                        if (shouldUseCurrentLocation && !isFromFavorites) {
-                            isReturningFromFavorites = false
+                        if (shouldUseCurrentLocation) {
                             val currentLocation = "${it.latitude},${it.longitude}"
-                            val lastLocation = sharedPrefs.getString(lastKnownLocationKey, null)
+                            val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
                             val hasSetHomeForLocation =
-                                sharedPrefs.getBoolean(hasSetHomeForLocationKey, false)
+                                sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
 
                             // Only show dialog if never asked before or location changed and home not set
-                            if (!sharedPrefs.getBoolean(hasAskedForHomeKey, false) ||
+                            if (!sharedPrefs.getBoolean(HAS_ASKED_HOME_KEY, false) ||
                                 (lastLocation != null && lastLocation != currentLocation && !hasSetHomeForLocation)
                             ) {
                                 _homeDialogVisible.value = true
-                                sharedPrefs.edit()
-                                    .putBoolean(hasAskedForHomeKey, true)
-                                    .putString(lastKnownLocationKey, currentLocation)
-                                    .apply()
+                                sharedPrefs.edit {
+                                    putBoolean(HAS_ASKED_HOME_KEY, true)
+                                        .putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
+                                }
                             }
-                            isFromFavorites = false
-                            try {
                                 fetchForecastData(it.latitude, it.longitude)
-                            } finally {
-                                isFetchingData = false
-                            }                        }
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -128,12 +127,12 @@ class ForecastViewModel(
                             }
                             repository.insertForecast(response.copy(isHome = true))
                             // Mark that home has been set for this location
-                            sharedPrefs.edit()
-                                .putBoolean(hasSetHomeForLocationKey, true)
-                                .apply()
+                            sharedPrefs.edit {
+                                putBoolean(HAS_SET_HOME_KEY, true)
+                            }
                         }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Handle error
             }
             _homeDialogVisible.value = false
@@ -144,35 +143,24 @@ class ForecastViewModel(
         _homeDialogVisible.value = false
     }
 
-    fun onReturnFromFavorites() {
-        isReturningFromFavorites = true
-        viewModelScope.launch {
-            _forecastState.value = ForecastUiState.Loading
-            _cityName.value = null
-            shouldUseCurrentLocation = true
-            // Force location update
-            locationHelper.startLocationUpdates()
-            setupLocationUpdates()
-        }
-    }
 
     fun updateLocation(location: Location) {
         viewModelScope.launch {
             _forecastState.value = ForecastUiState.Loading
             shouldUseCurrentLocation = false // Set this first
-            isFromFavorites = true // Then set this
+            _cachedLocation.value = location
             try {
                 fetchForecastData(location.lat, location.lng)
                 val currentLocation = "${location.lat},${location.lng}"
-                val lastLocation = sharedPrefs.getString(lastKnownLocationKey, null)
-                val hasSetHomeForLocation = sharedPrefs.getBoolean(hasSetHomeForLocationKey, false)
+                val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
+                val hasSetHomeForLocation = sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
 
                 // Only show dialog if location changed and home not set
                 if (lastLocation != currentLocation && !hasSetHomeForLocation) {
                     _homeDialogVisible.value = true
-                    sharedPrefs.edit()
-                        .putString(lastKnownLocationKey, currentLocation)
-                        .apply()
+                    sharedPrefs.edit {
+                        putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
+                    }
                 }
 
             } catch (e: Exception) {
@@ -276,10 +264,8 @@ class ForecastViewModel(
         locationHelper.stopLocationUpdates()
     }
 
-    fun resetLocationFlags() {
-        isFromFavorites = false
-        isReturningFromFavorites = false
-    }
+
+
 
     class Factory(
         private val repository: WeatherRepository,
