@@ -36,17 +36,22 @@ class MapsViewModel(
     private val _predictions = MutableStateFlow<List<AutocompletePrediction>>(emptyList())
     val predictions: StateFlow<List<AutocompletePrediction>> = _predictions.asStateFlow()
 
+    private val _showDialog = MutableStateFlow(false)
+    val showDialog: StateFlow<Boolean> = _showDialog.asStateFlow()
+
+    private var tempLocation: Location? = null
+
+
     init {
         if (locationHelper.hasLocationPermission()) {
-            // Start continuous location updates
-            locationHelper.startLocationUpdates()
             viewModelScope.launch {
-                locationHelper.getLocationUpdates().collect { loc ->
-                    loc?.let {
-                        val newLoc = Location(it.latitude, it.longitude)
-                        _location.value = newLoc
-                        fetchAddress("${newLoc.lat},${newLoc.lng}")
-                    }
+                // Get location once
+                locationHelper.getCurrentLocation()?.let { loc ->
+                    val newLoc = Location(loc.latitude, loc.longitude)
+                    _location.value = newLoc
+                    fetchAddress("${newLoc.lat},${newLoc.lng}")
+                } ?: run {
+                    _uiState.value = MapUiState.Error("Could not get current location")
                 }
             }
         } else {
@@ -114,13 +119,39 @@ class MapsViewModel(
                 }
 
                 place.latLng?.let { latLng ->
-                    updateLocation(Location(latLng.latitude, latLng.longitude))
+                    tempLocation = Location(latLng.latitude, latLng.longitude)
+                    updateLocation(tempLocation!!)
+                    _showDialog.value = true
                 }
             } catch (e: Exception) {
                 _uiState.value = MapUiState.Error("Failed to get place details: ${e.message}")
             }
         }
     }
+
+    fun addToFavorites() {
+        viewModelScope.launch {
+            try {
+                tempLocation?.let { location ->
+                    weatherRepository.getForecast(location.lat, location.lng)
+                        .collect { forecast ->
+                            weatherRepository.insertForecast(forecast)
+                        }
+                }
+            } catch (e: Exception) {
+                _uiState.value = MapUiState.Error("Failed to save location: ${e.message}")
+            } finally {
+                _showDialog.value = false
+                tempLocation = null
+            }
+        }
+    }
+
+    fun dismissDialog() {
+        _showDialog.value = false
+        tempLocation = null
+    }
+
 
     class Factory(
         private val locationHelper: LocationHelper,

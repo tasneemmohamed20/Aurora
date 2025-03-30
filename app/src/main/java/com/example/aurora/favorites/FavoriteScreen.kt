@@ -1,8 +1,10 @@
+// File: app/src/main/java/com/example/aurora/favorites/FavoriteScreen.kt
 package com.example.aurora.favorites
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,21 +16,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +51,10 @@ import androidx.compose.ui.unit.sp
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,27 +91,6 @@ fun FavoriteScreen(
             }
         )
 
-        Card(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            onClick = onSearchClick,
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Search for a city...",
-                    color = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
         when (uiState) {
             is FavUiState.Loading -> {
                 CircularProgressIndicator(
@@ -107,21 +101,30 @@ fun FavoriteScreen(
             }
             is FavUiState.Success -> {
                 val forecasts = (uiState as FavUiState.Success).forecasts
-                LazyColumn(modifier = Modifier.padding(top = 8.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     items(forecasts) { forecast ->
-                        // Safe extraction of temperature values
                         val firstItem = forecast.list?.firstOrNull()
-                        val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() ?:
-                        forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
-                        val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() ?:
-                        forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
+                        val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                            ?: forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
+                        val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                            ?: forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
                         val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
 
-                        FavoriteCard(
+//                        FavoriteCard(
+//                            city = forecast.city.name,
+//                            maxTemp = "$maxTemp°",
+//                            minTemp = "$minTemp°",
+//                            currentTemp = currentTemp,
+//                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+//                        )
+                        SwipeableFavoriteCard(
                             city = forecast.city.name,
                             maxTemp = "$maxTemp°",
                             minTemp = "$minTemp°",
                             currentTemp = currentTemp,
+                            onDelete = { viewModel.deleteFavorite(forecast) },
                             modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
                         )
                     }
@@ -135,6 +138,88 @@ fun FavoriteScreen(
                 )
             }
         }
+    }
+
+    Box {
+        FloatingActionButton(
+            onClick = onSearchClick,
+            shape = CircleShape,
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.BottomEnd),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Search"
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SwipeableFavoriteCard(
+    city: String,
+    maxTemp: String,
+    minTemp: String,
+    currentTemp: Double,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { dismissValue: SwipeToDismissBoxValue ->
+            if (dismissValue != SwipeToDismissBoxValue.EndToStart) {
+                showDeleteDialog = true
+            }
+            false
+        }
+    )
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Location") },
+            text = { Text("Are you sure you want to delete this location from favorites?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showDeleteDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {}
+    ) {
+        FavoriteCard(
+            city = city,
+            maxTemp = maxTemp,
+            minTemp = minTemp,
+            currentTemp = currentTemp,
+            modifier = modifier
+        )
     }
 }
 
@@ -151,7 +236,7 @@ fun FavoriteCard(
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 8.dp)
             .height(80.dp)
     ) {
         Row(
@@ -191,21 +276,4 @@ fun FavoriteCard(
             )
         }
     }
-}
-
-@Composable
-fun TestUi() {
-    FavoriteCard(
-        city = "New York",
-        maxTemp = "30°",
-        minTemp = "20°",
-        currentTemp = 25.0,
-        modifier = Modifier.padding(16.dp)
-    )
-}
-
-@Preview
-@Composable
-fun WeatherCardPreview() {
-    TestUi()
 }

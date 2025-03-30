@@ -1,5 +1,6 @@
 package com.example.aurora.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -32,7 +33,6 @@ class ForecastViewModel(
     val cityName = _cityName.asStateFlow()
 
     private val _location = MutableStateFlow<android.location.Location?>(null)
-    val location = _location.asStateFlow()
 
     init {
         initializeApp()
@@ -95,7 +95,6 @@ class ForecastViewModel(
                             _forecastState.value = ForecastUiState.Success(processedData)
                             _cityName.value = response.city.name
                         } else {
-                            // If API returns error, fall back to database
                             getForecastFromDatabase()
                         }
                     }
@@ -112,6 +111,7 @@ class ForecastViewModel(
     }
 
     private suspend fun getForecastFromDatabase() {
+        Log.i("ForecastViewModel", "Fetching from Database")
         repository.getAllForecasts().collect { forecasts ->
             if (forecasts.isNotEmpty()) {
                 val latestForecast = forecasts.last()
@@ -123,6 +123,7 @@ class ForecastViewModel(
             }
         }
     }
+
     private fun processHourlyData(response: ForecastResponse): MutableList<ListItem> {
         val hourlyDataList = mutableListOf<ListItem>()
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())

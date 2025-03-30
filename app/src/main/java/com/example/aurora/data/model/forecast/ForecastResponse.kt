@@ -16,7 +16,8 @@ data class ForecastResponse(
 	val cnt: Int? = null,
 	val cod: String? = null,
 	val message: Int? = null,
-	val list: List<ListItem?>? = null
+	val list: List<ListItem?>? = null,
+	var isHome: Boolean = false
 )
 
 data class ListItem(

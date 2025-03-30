@@ -17,6 +17,8 @@ import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class LocationHelper(internal val context: Context) {
     private val fusedClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
@@ -94,5 +96,24 @@ class LocationHelper(internal val context: Context) {
             fusedClient.removeLocationUpdates(callback)
         }
         locationCallback = null
+    }
+
+    suspend fun getCurrentLocation(): android.location.Location? = suspendCoroutine { continuation ->
+        try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            if (hasLocationPermission()) {
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { location ->
+                        continuation.resume(location)
+                    }
+                    .addOnFailureListener { e ->
+                        continuation.resume(null)
+                    }
+            } else {
+                continuation.resume(null)
+            }
+        } catch (e: Exception) {
+            continuation.resume(null)
+        }
     }
 }

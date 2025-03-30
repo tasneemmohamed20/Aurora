@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,6 +59,37 @@ fun MapScreen(
 
     val predictions by viewModel.predictions.collectAsState()
 
+    val showDialog by viewModel.showDialog.collectAsState()
+
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDialog() },
+            title = { Text("Add to Favorites") },
+            text = { Text("Would you like to add this location to favorites?") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.addToFavorites() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { viewModel.dismissDialog() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Text("No")
+                }
+            }
+        )
+    }
+
 
     LaunchedEffect(currentLocation) {
         currentLocation?.let { loc ->
@@ -67,11 +99,11 @@ fun MapScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
+
         CustomSearchBar(
             state = SearchBarState(
                 query = searchQuery.value,
@@ -102,13 +134,13 @@ fun MapScreen(
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            shadowElevation = SearchBarDefaults.Elevation
+            modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shadowElevation = SearchBarDefaults.TonalElevation
         )
 
         Box(
             modifier = Modifier
-                .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
         ) {
             GoogleMap(
@@ -136,25 +168,7 @@ fun MapScreen(
                 is MapUiState.Success -> {
                     val address = (uiState as MapUiState.Success).addresses.firstOrNull()
                     address?.let {
-                        Button(
-                            onClick = {
-                                onLocationSelected(
-                                    Location(markerState.position.latitude, markerState.position.longitude)
-                                )
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text(
-                                text = "Select ${it.formattedAddress}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+
                     }
                 }
                 is MapUiState.Error -> {
