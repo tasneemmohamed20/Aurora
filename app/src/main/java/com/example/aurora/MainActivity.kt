@@ -37,6 +37,7 @@ import com.example.aurora.workers.WeatherWorkManager
 import com.google.android.libraries.places.api.Places
 import com.google.maps.android.ktx.BuildConfig
 import kotlin.getValue
+import kotlin.toString
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ForecastViewModel by viewModels {
@@ -199,12 +200,20 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             composable(Routes.FavoritesRoute.toString()) {
                 FavoriteScreen(
                     viewModel = favViewModel,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = {
+                        forecastViewModel.resetLocationFlags()
+                        navController.popBackStack() },
                     onSearchClick = {
                         val currentLocation = mapsViewModel.location.value
                         val lat = currentLocation?.lat ?: 30.0444
                         val lon = currentLocation?.lng ?: 31.2357
                         navController.navigate(Routes.MapRoute(lat, lon).toString())
+                    },
+                    onFavoriteClicked = { location ->
+                        forecastViewModel.updateLocation(location)
+                        navController.navigate(Routes.HomeRoute.toString()) {
+                            popUpTo(Routes.FavoritesRoute.toString()) { inclusive = false }
+                        }
                     }
                 )
             }

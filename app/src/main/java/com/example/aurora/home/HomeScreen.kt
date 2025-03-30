@@ -16,9 +16,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,26 +48,51 @@ import com.example.aurora.home.home_components.WindData
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
+import kotlin.text.toFloat
 
 
 @Composable
 fun HomeScreen(
     forecastViewModel: ForecastViewModel,
     onNavigateToFav: () -> Unit
-
 ) {
-//    val weatherState by currentWeatherViewModel.weatherState.collectAsState()
     val cityName by forecastViewModel.cityName.collectAsState()
     val forecastState by forecastViewModel.forecastState.collectAsState()
+    val showHomeDialog by forecastViewModel.homeDialogVisible.collectAsState()
+
+    LaunchedEffect(Unit) {
+        if (forecastViewModel.shouldUseCurrentLocation) {
+            forecastViewModel.onReturnFromFavorites()
+        }
+    }
+
+    if (showHomeDialog) {
+        AlertDialog(
+            onDismissRequest = { forecastViewModel.dismissHomeDialog() },
+            title = { Text("Set Home Location") },
+            text = { Text("Would you like to set your current location as home?") },
+            confirmButton = {
+                Button(
+                    onClick = { forecastViewModel.confirmHomeLocation() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { forecastViewModel.dismissHomeDialog() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("No")
+                }
+            }
+        )
+    }
 
     val configuration = LocalConfiguration.current
     LaunchedEffect(configuration) {
         forecastViewModel.onConfigurationChanged()
-    }
-
-    LaunchedEffect(Unit) {
-//        currentWeatherViewModel.setupLocationUpdates()
-        forecastViewModel.setupLocationUpdates()
     }
 
     val background = gradientBrush(isSystemInDarkTheme())
@@ -72,11 +101,8 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(background)
-//            .systemBarsPadding()
     ) {
         Column {
-//            Spacer(modifier = Modifier.height(statusBarHeight))
-
             CustomAppBar(
                 title = cityName ?: "",
                 rightIcon = {
@@ -124,7 +150,6 @@ fun HomeScreen(
                         )
                     }
                     is ForecastUiState.Success -> {
-//                        val currentWeather = (weatherState as UiState.Success<CurrentResponse>).data
                         val forecastData = (forecastState as ForecastUiState.Success).data
                         val currentData = forecastData.first()
                         LazyColumn(
@@ -138,11 +163,11 @@ fun HomeScreen(
                                 DailyForecast(forecastData)
                             }
                             item {
-                                    WindData(
-                                        windSpeed = currentData.wind?.speed as? Double ?: 0.0,
-                                        windGust = currentData.wind?.gust as? Double ?: 0.0,
-                                        windDirection = currentData.wind?.deg?.toFloat() ?: 0f
-                                    )
+                                WindData(
+                                    windSpeed = currentData.wind?.speed as? Double ?: 0.0,
+                                    windGust = currentData.wind?.gust as? Double ?: 0.0,
+                                    windDirection = currentData.wind?.deg?.toFloat() ?: 0f
+                                )
                             }
                             item {
                                 Row(
@@ -153,10 +178,10 @@ fun HomeScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(modifier = Modifier.weight(1f)) {
-                                            FeelsLike(feelsLike = (currentData.main?.feelsLike ?: 0.0) as Double)
+                                        FeelsLike(feelsLike = (currentData.main?.feelsLike ?: 0.0) as Double)
                                     }
                                     Box(modifier = Modifier.weight(1f)) {
-                                            Humidity(humidity = currentData.main?.humidity ?: 0)
+                                        Humidity(humidity = currentData.main?.humidity ?: 0)
                                     }
                                 }
                             }

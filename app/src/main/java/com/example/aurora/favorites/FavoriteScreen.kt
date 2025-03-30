@@ -55,17 +55,23 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import com.example.aurora.data.model.map.Location
+import com.example.aurora.utils.toDoubleOrZero
+import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoriteScreen(
     viewModel: FavViewModel,
     onBackClick: () -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onFavoriteClicked: (Location) -> Unit
 ) {
     val uiState = viewModel.uiState.collectAsState().value
     val queryState = remember { mutableStateOf("") }
     val activeState = remember { mutableStateOf(false) }
+
+
     SearchBarState(
         query = queryState.value,
         active = activeState.value,
@@ -101,6 +107,7 @@ fun FavoriteScreen(
             }
             is FavUiState.Success -> {
                 val forecasts = (uiState as FavUiState.Success).forecasts
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -112,19 +119,18 @@ fun FavoriteScreen(
                             ?: forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
                         val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
 
-//                        FavoriteCard(
-//                            city = forecast.city.name,
-//                            maxTemp = "$maxTemp°",
-//                            minTemp = "$minTemp°",
-//                            currentTemp = currentTemp,
-//                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
-//                        )
                         SwipeableFavoriteCard(
                             city = forecast.city.name,
                             maxTemp = "$maxTemp°",
                             minTemp = "$minTemp°",
                             currentTemp = currentTemp,
                             onDelete = { viewModel.deleteFavorite(forecast) },
+                            onClick = {
+                                onFavoriteClicked(Location(
+                                    forecast.city.coord?.lat.toDoubleOrZero(),
+                                    forecast.city.coord?.lon.toDoubleOrZero()
+                                ))
+                            },
                             modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
                         )
                     }
@@ -166,6 +172,7 @@ fun SwipeableFavoriteCard(
     minTemp: String,
     currentTemp: Double,
     onDelete: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -218,6 +225,7 @@ fun SwipeableFavoriteCard(
             maxTemp = maxTemp,
             minTemp = minTemp,
             currentTemp = currentTemp,
+            onClick = onClick,
             modifier = modifier
         )
     }
@@ -229,6 +237,7 @@ fun FavoriteCard(
     maxTemp: String,
     minTemp: String,
     currentTemp: Double,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -237,7 +246,8 @@ fun FavoriteCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-            .height(80.dp)
+            .height(80.dp),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

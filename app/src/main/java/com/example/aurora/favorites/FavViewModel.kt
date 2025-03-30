@@ -8,6 +8,7 @@ import com.example.aurora.data.repo.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 class FavViewModel(private val repository: WeatherRepository) : ViewModel() {
@@ -22,7 +23,9 @@ class FavViewModel(private val repository: WeatherRepository) : ViewModel() {
     private fun loadFavorites() {
         viewModelScope.launch {
             try {
-                repository.getAllForecasts().collect { forecasts ->
+                repository.getAllForecasts()
+                    .distinctUntilChanged()
+                    .collect { forecasts ->
                     _uiState.value = FavUiState.Success(forecasts)
                 }
             } catch (e: Exception) {
