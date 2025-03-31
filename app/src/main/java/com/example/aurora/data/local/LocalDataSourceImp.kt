@@ -17,4 +17,9 @@ class LocalDataSourceImp (private val dao: Dao) : LocalDataSource {
         return dao.deleteForecast(forecast)
     }
 
+    override suspend fun getForecastByCityName(cityName: String): Flow<ForecastResponse?> {
+        return dao.getForecastByCityName(cityName)
+    }
+
+
 }

@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,6 +39,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,42 +109,6 @@ fun MapScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
-
-        CustomSearchBar(
-            state = SearchBarState(
-                query = searchQuery.value,
-                onQueryChange = { newQuery ->
-                    searchQuery.value = newQuery
-                    viewModel.searchPlaces(newQuery)
-                },
-                onActiveChange = { isActive ->
-                    if (!isActive) {
-                        searchQuery.value = ""
-                    }
-                },
-                active = searchQuery.value.isNotEmpty()
-            ),
-            inputField = {
-                predictions.forEach { prediction ->
-                    ListItem(
-                        headlineContent = {
-                            Text(prediction.getPrimaryText(null).toString())
-                        },
-                        supportingContent = {
-                            Text(prediction.getSecondaryText(null).toString())
-                        },
-                        modifier = Modifier.clickable {
-                            viewModel.getPlaceDetails(prediction.placeId)
-                            searchQuery.value = ""
-                        }
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shadowElevation = SearchBarDefaults.TonalElevation
-        )
-
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
@@ -169,12 +136,14 @@ fun MapScreen(
                             .padding(16.dp)
                     )
                 }
+
                 is MapUiState.Success -> {
                     val address = (uiState as MapUiState.Success).addresses.firstOrNull()
                     address?.let {
 
                     }
                 }
+
                 is MapUiState.Error -> {
                     Column(
                         modifier = Modifier
@@ -195,8 +164,65 @@ fun MapScreen(
                         }
                     }
                 }
+
                 else -> Unit
             }
         }
+
+        CustomSearchBar(
+            state = SearchBarState(
+                query = searchQuery.value,
+                onQueryChange = { newQuery ->
+                    searchQuery.value = newQuery
+                    viewModel.searchPlaces(newQuery)
+                },
+                onActiveChange = { isActive ->
+                    if (!isActive) {
+                        searchQuery.value = ""
+                    }
+                },
+                active = searchQuery.value.isNotEmpty()
+            ),
+            searchResults = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 350.dp)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(predictions.size) { index ->
+                            val prediction = predictions[index]
+                            ListItem(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.getPlaceDetails(prediction.placeId)
+                                        searchQuery.value = ""
+                                    }
+                                    .padding(horizontal = 16.dp),
+                                headlineContent = {
+                                    Text(
+                                        text = prediction.getPrimaryText(null).toString(),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = prediction.getSecondaryText(null).toString(),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+        )
+
+
     }
 }

@@ -22,7 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,7 +34,10 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,24 +46,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aurora.data.model.map.Location
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import com.example.aurora.data.model.forecast.ForecastResponse
-import com.example.aurora.data.model.map.Location
 import com.example.aurora.utils.toDoubleOrZero
-import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +104,7 @@ fun FavoriteScreen(
                 )
             }
             is FavUiState.Success -> {
-                val forecasts = (uiState as FavUiState.Success).forecasts
+                val forecasts = (uiState ).forecasts
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -173,7 +167,7 @@ fun FavoriteScreen(
             }
             is FavUiState.Error -> {
                 Text(
-                    text = (uiState as FavUiState.Error).message,
+                    text = (uiState ).message,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -202,14 +196,14 @@ fun FavoriteScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableFavoriteCard(
+    modifier: Modifier = Modifier,
     city: String,
     maxTemp: String,
     minTemp: String,
     currentTemp: Double,
     isHome: Boolean = false,
     onDelete: () -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showHomeWarningDialog by remember { mutableStateOf(false) }
@@ -358,8 +352,9 @@ fun FavoriteCard(
                     }
                 }
             }
+            var castedCurrentTemp = currentTemp.toInt()
             Text(
-                text = "$currentTemp°",
+                text = "$castedCurrentTemp°",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White

@@ -19,4 +19,8 @@ interface Dao {
 
     @Query("SELECT * FROM forecast_table")
     fun getAllForecasts(): Flow<List<ForecastResponse>>
+
+    @Query("SELECT * FROM forecast_table WHERE city_city_name = :cityName")
+    fun getForecastByCityName(cityName: String): Flow<ForecastResponse?>
+
 }

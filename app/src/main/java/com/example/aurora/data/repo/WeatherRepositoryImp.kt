@@ -90,6 +90,17 @@ class WeatherRepositoryImp private constructor(
         return localDataSource.deleteForecast(forecast)
     }
 
+    override suspend fun getForecastByCityName(cityName: String): Flow<ForecastResponse?> {
+        return localDataSource.getForecastByCityName(cityName).map { forecast ->
+            // Preserve isHome flag when fetching by city name
+            forecast?.let {
+                val existingForecasts = localDataSource.getAllForecasts().firstOrNull() ?: emptyList()
+                val existingForecast = existingForecasts.find { it.city.name == it.city.name }
+                it.copy(isHome = existingForecast?.isHome == true)
+            }
+        }
+    }
+
     companion object {
         private var instance: WeatherRepositoryImp? = null
         fun getInstance(

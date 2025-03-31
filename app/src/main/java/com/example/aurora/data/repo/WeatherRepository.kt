@@ -13,4 +13,6 @@ interface WeatherRepository {
     suspend fun getAllForecasts(): Flow<List<ForecastResponse>>
     suspend fun insertForecast(forecast: ForecastResponse): Long
     suspend fun deleteForecast(forecast: ForecastResponse): Int
+    suspend fun getForecastByCityName(cityName: String): Flow<ForecastResponse?>
+
 }

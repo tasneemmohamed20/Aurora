@@ -59,7 +59,8 @@ class LocationHelper(internal val context: Context) {
                 } ?: Log.d("LocationHelper", "No last known location")
             }
 
-            val locationRequest = LocationRequest.Builder(30000)
+            val locationRequest = LocationRequest
+                .Builder(30000)
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY) // Changed to high accuracy
                 .setMinUpdateIntervalMillis(10000) // Reduced interval for testing
                 .setMaxUpdateDelayMillis(30000)

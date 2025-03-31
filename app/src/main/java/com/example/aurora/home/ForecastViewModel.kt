@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.core.content.edit
+import com.example.aurora.utils.toDoubleOrZero
 
 class ForecastViewModel(
     private val repository: WeatherRepository,
@@ -60,8 +61,22 @@ class ForecastViewModel(
         viewModelScope.launch {
             WorkerUtils.initRepository(repository)
             weatherWorkManager.setupPeriodicWeatherUpdate()
-            setupLocationUpdates()
+
+            loadHomeLocation()
         }
+    }
+
+    private suspend fun loadHomeLocation() {
+        repository.getAllForecasts().firstOrNull()?.let { forecasts ->
+            forecasts.find { it.isHome }?.let { homeForecast ->
+                val location = Location(
+                    homeForecast.city.coord?.lat.toDoubleOrZero(),
+                    homeForecast.city.coord?.lon.toDoubleOrZero()
+                )
+                _cachedLocation.value = location
+                fetchForecastData(location.lat, location.lng)
+            } ?: setupLocationUpdates() // If no home location found, use current location
+        } ?: setupLocationUpdates() // If no forecasts at all, use current location
     }
 
     fun resetToCurrentLocation() {
@@ -118,26 +133,27 @@ class ForecastViewModel(
         viewModelScope.launch {
             try {
                 currentForecastResponse?.let { response ->
-                    repository.getAllForecasts()
-                        .firstOrNull()?.let { forecasts ->
-                            forecasts.forEach { forecast ->
-                                if (forecast.isHome) {
-                                    repository.deleteForecast(forecast)
-                                }
-                            }
-                            repository.insertForecast(response.copy(isHome = true))
-                            // Mark that home has been set for this location
-                            sharedPrefs.edit {
-                                putBoolean(HAS_SET_HOME_KEY, true)
+                    // Remove home status from all forecasts
+                    repository.getAllForecasts().firstOrNull()?.let { forecasts ->
+                        forecasts.forEach { forecast ->
+                            if (forecast.isHome) {
+                                repository.deleteForecast(forecast)
                             }
                         }
+                        // Insert new home forecast
+                        repository.insertForecast(response.copy(isHome = true))
+                        sharedPrefs.edit {
+                            putBoolean(HAS_SET_HOME_KEY, true)
+                        }
+                    }
                 }
-            } catch (_: Exception) {
-                // Handle error
+            } catch (e: Exception) {
+                Log.e("ForecastViewModel", "Error setting home location: ${e.message}")
             }
             _homeDialogVisible.value = false
         }
     }
+
 
     fun dismissHomeDialog() {
         _homeDialogVisible.value = false
@@ -146,23 +162,26 @@ class ForecastViewModel(
 
     fun updateLocation(location: Location) {
         viewModelScope.launch {
-            _forecastState.value = ForecastUiState.Loading
-            shouldUseCurrentLocation = false // Set this first
+            shouldUseCurrentLocation = false
             _cachedLocation.value = location
+
             try {
-                fetchForecastData(location.lat, location.lng)
+                if (locationHelper.context.hasNetworkConnection()) {
+                    fetchForecastData(location.lat, location.lng)
+                } else {
+                    getForecastFromDatabase(location.lat, location.lng)
+                }
+
                 val currentLocation = "${location.lat},${location.lng}"
                 val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
                 val hasSetHomeForLocation = sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
 
-                // Only show dialog if location changed and home not set
                 if (lastLocation != currentLocation && !hasSetHomeForLocation) {
                     _homeDialogVisible.value = true
                     sharedPrefs.edit {
                         putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
                     }
                 }
-
             } catch (e: Exception) {
                 _forecastState.value = ForecastUiState.Error("Failed to update location: ${e.message}")
             }
@@ -170,47 +189,42 @@ class ForecastViewModel(
     }
 
     private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
-        Log.d("ForecastViewModel", "Fetching forecast data for: $latitude, $longitude")
-        _forecastState.value = ForecastUiState.Loading
         _cityName.value = null
+        _forecastState.value = ForecastUiState.Loading
 
         try {
-            val isConnected = locationHelper.context.hasNetworkConnection()
-
-            if (isConnected) {
-                try {
-                    repository.getForecast(latitude, longitude).collect { response ->
-                        // Store current forecast response for potential home marking
-                        currentForecastResponse = response
-                        if (response.cod == "200") {
-                            repository.insertForecast(response)
-                            val processedData = processHourlyData(response)
-                            _forecastState.value = ForecastUiState.Success(processedData)
-                            _cityName.value = response.city.name
-                        } else {
-                            getForecastFromDatabase()
-                        }
+            if (locationHelper.context.hasNetworkConnection()) {
+                repository.getForecast(latitude, longitude).collect { response ->
+                    currentForecastResponse = response
+                    if (response.cod == "200") {
+                        repository.insertForecast(response)
+                        val processedData = processHourlyData(response)
+                        _forecastState.value = ForecastUiState.Success(processedData)
+                        _cityName.value = response.city.name
+                    } else {
+                        getForecastFromDatabase(latitude, longitude)
                     }
-                } catch (_: Exception) {
-                    getForecastFromDatabase()
                 }
             } else {
-                getForecastFromDatabase()
+                getForecastFromDatabase(latitude, longitude)
             }
         } catch (e: Exception) {
-            _forecastState.value = ForecastUiState.Error("Failed to load forecast data: ${e.message}")
+            getForecastFromDatabase(latitude, longitude)
         }
     }
 
-    private suspend fun getForecastFromDatabase() {
-        Log.i("ForecastViewModel", "Fetching from Database")
+    private suspend fun getForecastFromDatabase(latitude: Double, longitude: Double) {
         repository.getAllForecasts().collect { forecasts ->
-            if (forecasts.isNotEmpty()) {
-                val latestForecast = forecasts.last()
-                currentForecastResponse = latestForecast
-                val processedData = processHourlyData(latestForecast)
+            val forecast = forecasts.find { forecast ->
+                forecast.city.coord?.lat == latitude &&
+                        forecast.city.coord?.lon == longitude
+            }
+
+            if (forecast != null) {
+                currentForecastResponse = forecast
+                val processedData = processHourlyData(forecast)
                 _forecastState.value = ForecastUiState.Success(processedData)
-                _cityName.value = latestForecast.city.name
+                _cityName.value = forecast.city.name
             } else {
                 _forecastState.value = ForecastUiState.Error("No cached data available")
             }
