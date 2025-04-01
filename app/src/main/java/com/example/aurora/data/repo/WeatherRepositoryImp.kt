@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import com.example.aurora.R
 import com.example.aurora.data.local.LocalDataSource
+import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.remote.RemoteDataSource
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +24,7 @@ class WeatherRepositoryImp private constructor(
     private val currentLocale: String
         get() = context.resources.configuration.locales[0].toString().substring(0, 2)
 
+    // Remote
     override suspend fun getForecast(
         latitude: Double,
         longitude: Double
@@ -50,6 +52,8 @@ class WeatherRepositoryImp private constructor(
         return remoteDataSource.getAddressFromGeocoding(latlng, geocodingApiKey)
     }
 
+
+    //Local - Forecast
     override suspend fun getAllForecasts(): Flow<List<ForecastResponse>> {
         return localDataSource.getAllForecasts()
     }
@@ -99,6 +103,18 @@ class WeatherRepositoryImp private constructor(
                 it.copy(isHome = existingForecast?.isHome == true)
             }
         }
+    }
+
+    // Local - Weather Alert Settings
+
+    override suspend fun getAllAlerts(): Flow<List<WeatherAlertSettings>> {
+        return localDataSource.getAllAlerts()
+    }
+    override suspend fun insertAlert(alert: WeatherAlertSettings): Long {
+        return localDataSource.insertAlert(alert)
+    }
+    override suspend fun deleteAlert(alert: WeatherAlertSettings): Int {
+        return localDataSource.deleteAlert(alert)
     }
 
     companion object {

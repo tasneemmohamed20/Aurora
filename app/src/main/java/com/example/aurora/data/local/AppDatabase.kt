@@ -5,10 +5,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.model.forecast.ForecastTypeConverters
 
-@Database(entities = [ForecastResponse::class], version = 1)
+@Database(entities = arrayOf(
+    ForecastResponse::class,
+    WeatherAlertSettings::class
+),
+    version = 1)
 @TypeConverters(ForecastTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun getForecastDao(): Dao
@@ -19,7 +25,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): AppDatabase {
             return instance?: synchronized(this) {
-                val INSTANCE = Room.databaseBuilder(context, AppDatabase::class.java, "app_database").build()
+                val INSTANCE = Room.databaseBuilder(context, AppDatabase::class.java, "app_database")
+                    .build()
                 instance = INSTANCE
                 INSTANCE
             }

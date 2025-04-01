@@ -1,0 +1,86 @@
+package com.example.aurora.workers
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import com.example.aurora.MainActivity
+import com.example.aurora.R
+
+class WeatherAlertWorker(private val context: Context) {
+
+    private val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+    fun showWeatherAlert(alertId: String, useDefaultSound: Boolean) {
+        createNotificationChannel()
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            alertId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val dismissIntent = Intent(context, WeatherAlertReceiver::class.java).apply {
+            action = ACTION_DISMISS_ALERT
+            putExtra(EXTRA_ALERT_ID, alertId)
+        }
+
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context,
+            alertId.hashCode(),
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Weather Alert")
+            .setContentText("Weather conditions update available")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(android.R.drawable.ic_delete, "Dismiss", dismissPendingIntent)
+            .setStyle(NotificationCompat.BigTextStyle())
+            .apply {
+                if (useDefaultSound) {
+                    setDefaults(NotificationCompat.DEFAULT_ALL)
+                }
+            }
+            .build()
+
+        notificationManager?.notify(alertId.hashCode(), notification)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Weather Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Weather alert notifications"
+                enableLights(true)
+                enableVibration(true)
+                setShowBadge(true)
+            }
+            notificationManager?.createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        const val CHANNEL_ID = "weather_alerts"
+        const val ACTION_DISMISS_ALERT = "com.example.aurora.DISMISS_ALERT"
+        const val ACTION_SHOW_ALERT = "com.example.aurora.SHOW_ALERT"
+        const val EXTRA_ALERT_ID = "alert_id"
+    }
+}

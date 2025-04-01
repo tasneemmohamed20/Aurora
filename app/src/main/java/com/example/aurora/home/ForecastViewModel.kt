@@ -190,7 +190,7 @@ class ForecastViewModel(
 
     private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
         _cityName.value = null
-        _forecastState.value = ForecastUiState.Loading
+//        _forecastState.value = ForecastUiState.Loading
 
         try {
             if (locationHelper.context.hasNetworkConnection()) {

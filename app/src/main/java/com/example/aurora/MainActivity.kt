@@ -14,12 +14,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.findNavController
 import androidx.navigation.navArgument
+import androidx.work.WorkManager
 import com.example.aurora.data.local.AppDatabase
 import com.example.aurora.data.local.LocalDataSourceImp
 import com.example.aurora.data.model.map.Location
@@ -31,10 +34,15 @@ import com.example.aurora.home.ForecastViewModel
 import com.example.aurora.home.HomeScreen
 import com.example.aurora.map.MapScreen
 import com.example.aurora.map.MapsViewModel
+import com.example.aurora.notifications.NotificationsScreen
+import com.example.aurora.notifications.NotificationsViewModel
 import com.example.aurora.router.Routes
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 import com.google.android.libraries.places.api.Places
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlin.toString
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ForecastViewModel by viewModels {
@@ -64,6 +72,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val _navigateToHome = MutableStateFlow(false)
+    val navigateToHome = _navigateToHome.asStateFlow()
+
+    private fun navigateToHomeScreen() {
+        _navigateToHome.value = true
+    }
+
     private fun requestLocationPermission() {
         locationPermissionRequest.launch(
             arrayOf(
@@ -83,6 +98,9 @@ class MainActivity : ComponentActivity() {
             }
         }
         requestLocationPermission()
+        if (intent?.getStringExtra("destination") == "home") {
+            navigateToHomeScreen()
+        }
     }
 
     override fun onResume() {
@@ -96,6 +114,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
     val navController = rememberNavController()
+    val view = LocalView.current
+    val activity = remember(view) { view.context as MainActivity }
     val context = LocalContext.current
     val placesClient = remember {
         try {
@@ -105,6 +125,17 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 context.resources.getString(R.string.MAPS_API_KEY),
                 )
             Places.createClient(context)
+        }
+    }
+
+    LaunchedEffect(activity.navigateToHome) {
+        activity.navigateToHome.collect { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(Routes.HomeRoute.toString()) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
         }
     }
     val forecastViewModel: ForecastViewModel = viewModel(
@@ -147,6 +178,18 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
         )
     )
 
+    val notificationsViewModel: NotificationsViewModel = viewModel(
+        factory = NotificationsViewModel.Factory(
+            repository = WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
+                context
+            ),
+            workManager = WeatherWorkManager(context),
+            context = context
+        )
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
@@ -159,6 +202,9 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                     forecastViewModel = forecastViewModel,
                     onNavigateToFav = {
                         navController.navigate(Routes.FavoritesRoute.toString())
+                    },
+                    onNavigateToAlerts = {
+                        navController.navigate(Routes.NotificationsRoute.toString())
                     }
                 )
             }
@@ -213,6 +259,13 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                             launchSingleTop = true
                         }
                     }
+                )
+            }
+
+            composable(Routes.NotificationsRoute.toString()) {
+                NotificationsScreen(
+                    onBackClick = {},
+                    viewModel = notificationsViewModel
                 )
             }
         }

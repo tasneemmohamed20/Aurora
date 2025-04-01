@@ -47,11 +47,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.ui.components.CustomAppBar
+import com.example.aurora.ui.components.CustomFab
 import com.example.aurora.ui.components.SearchBarState
 import com.example.aurora.ui.theme.gradientBrush
 import com.example.aurora.utils.toDoubleOrZero
@@ -77,120 +79,134 @@ fun FavoriteScreen(
         onActiveChange = { active -> activeState.value = active }
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradientBrush(isSystemInDarkTheme()))
-    ) {
-        CustomAppBar(
-            title = "Favorites",
-            leftIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradientBrush(isSystemInDarkTheme()))
+        ) {
+            CustomAppBar(
+                title = "Favorites",
+                leftIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+
+            when (uiState) {
+                is FavUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .wrapContentSize()
                     )
                 }
-            }
-        )
 
-        when (uiState) {
-            is FavUiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .wrapContentSize()
-                )
-            }
-            is FavUiState.Success -> {
-                val forecasts = (uiState ).forecasts
+                is FavUiState.Success -> {
+                    val forecasts = (uiState).forecasts
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val homeLocation = forecasts.find { it.isHome }
-                    val otherLocations = forecasts.filterNot { it.isHome }
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val homeLocation = forecasts.find { it.isHome }
+                        val otherLocations = forecasts.filterNot { it.isHome }
 
-                    homeLocation?.let { forecast ->
-                        item {
+                        homeLocation?.let { forecast ->
+                            item {
+                                val firstItem = forecast.list?.firstOrNull()
+                                val maxTemp =
+                                    firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                                        ?: forecast.list?.mapNotNull {
+                                            it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                                        }?.maxOrNull() ?: 0
+                                val minTemp =
+                                    firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                                        ?: forecast.list?.mapNotNull {
+                                            it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                                        }?.minOrNull() ?: 0
+                                val currentTemp =
+                                    firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
+
+                                SwipeableFavoriteCard(
+                                    city = forecast.city.name,
+                                    maxTemp = "$maxTemp°",
+                                    minTemp = "$minTemp°",
+                                    currentTemp = currentTemp,
+                                    isHome = true,
+                                    onDelete = { viewModel.deleteFavorite(forecast) },
+                                    onClick = {
+                                        onFavoriteClicked(
+                                            Location(
+                                                forecast.city.coord?.lat.toDoubleOrZero(),
+                                                forecast.city.coord?.lon.toDoubleOrZero()
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                                )
+                            }
+                        }
+
+                        items(otherLocations) { forecast ->
                             val firstItem = forecast.list?.firstOrNull()
-                            val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
-                                ?: forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
-                            val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
-                                ?: forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
-                            val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
+                            val maxTemp =
+                                firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                                    ?: forecast.list?.mapNotNull {
+                                        it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
+                                    }?.maxOrNull() ?: 0
+                            val minTemp =
+                                firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                                    ?: forecast.list?.mapNotNull {
+                                        it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
+                                    }?.minOrNull() ?: 0
+                            val currentTemp =
+                                firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
 
                             SwipeableFavoriteCard(
                                 city = forecast.city.name,
                                 maxTemp = "$maxTemp°",
                                 minTemp = "$minTemp°",
                                 currentTemp = currentTemp,
-                                isHome = true,
+                                isHome = false,
                                 onDelete = { viewModel.deleteFavorite(forecast) },
                                 onClick = {
-                                    onFavoriteClicked(Location(
-                                        forecast.city.coord?.lat.toDoubleOrZero(),
-                                        forecast.city.coord?.lon.toDoubleOrZero()
-                                    ))
+                                    onFavoriteClicked(
+                                        Location(
+                                            forecast.city.coord?.lat.toDoubleOrZero(),
+                                            forecast.city.coord?.lon.toDoubleOrZero()
+                                        )
+                                    )
                                 },
                                 modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
                             )
                         }
                     }
+                }
 
-                    items(otherLocations) { forecast ->
-                        val firstItem = forecast.list?.firstOrNull()
-                        val maxTemp = firstItem?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt()
-                            ?: forecast.list?.mapNotNull { it?.main?.tempMax?.toString()?.toDoubleOrNull()?.toInt() }?.maxOrNull() ?: 0
-                        val minTemp = firstItem?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt()
-                            ?: forecast.list?.mapNotNull { it?.main?.tempMin?.toString()?.toDoubleOrNull()?.toInt() }?.minOrNull() ?: 0
-                        val currentTemp = firstItem?.main?.temp?.toString()?.toDoubleOrNull() ?: 0.0
-
-                        SwipeableFavoriteCard(
-                            city = forecast.city.name,
-                            maxTemp = "$maxTemp°",
-                            minTemp = "$minTemp°",
-                            currentTemp = currentTemp,
-                            isHome = false,
-                            onDelete = { viewModel.deleteFavorite(forecast) },
-                            onClick = {
-                                onFavoriteClicked(Location(
-                                    forecast.city.coord?.lat.toDoubleOrZero(),
-                                    forecast.city.coord?.lon.toDoubleOrZero()
-                                ))
-                            },
-                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
-                        )
-                    }
+                is FavUiState.Error -> {
+                    Text(
+                        text = (uiState).message,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
             }
-            is FavUiState.Error -> {
-                Text(
-                    text = (uiState ).message,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
         }
-    }
 
-    Box {
-        FloatingActionButton(
-            onClick = onSearchClick,
-            shape = CircleShape,
+        CustomFab(
             modifier = Modifier
                 .padding(16.dp)
                 .align(Alignment.BottomEnd),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Search"
-            )
-        }
+            icon = Icons.Default.Add,
+            onClick = onSearchClick
+        )
     }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

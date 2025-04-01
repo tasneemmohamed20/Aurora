@@ -61,8 +61,8 @@ class LocationHelper(internal val context: Context) {
 
             val locationRequest = LocationRequest
                 .Builder(30000)
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY) // Changed to high accuracy
-                .setMinUpdateIntervalMillis(10000) // Reduced interval for testing
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .setMinUpdateIntervalMillis(10000)
                 .setMaxUpdateDelayMillis(30000)
                 .build()
 

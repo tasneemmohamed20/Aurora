@@ -54,7 +54,9 @@ import kotlin.text.toFloat
 @Composable
 fun HomeScreen(
     forecastViewModel: ForecastViewModel,
-    onNavigateToFav: () -> Unit
+    onNavigateToFav: () -> Unit,
+//    onNavigateToSettings: () -> Unit,
+    onNavigateToAlerts: () -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
@@ -119,9 +121,8 @@ fun HomeScreen(
                             onSettingsClick = {
                                 // Handle settings navigation
                             },
-                            onAlertsClick = {
-                                // Handle alerts navigation
-                            }
+                            onAlertsClick = onNavigateToAlerts
+
                         )
                     }
                 },

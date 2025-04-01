@@ -17,7 +17,7 @@ sealed class Routes{
     data object SettingsRoute : Routes()
 
     @Serializable
-    data object AlertsRoute : Routes()
+    data object NotificationsRoute : Routes()
 
     @Serializable
     data class MapRoute(
