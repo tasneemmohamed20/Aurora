@@ -11,7 +11,6 @@ class AuroraApplication : Application() {
 
         // Initialize database
         AppDatabase.getInstance(this)
-
         WorkManager.initialize(
             this,
             Configuration.Builder()

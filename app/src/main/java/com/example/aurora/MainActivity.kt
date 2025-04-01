@@ -1,6 +1,7 @@
 package com.example.aurora
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,9 +21,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.findNavController
 import androidx.navigation.navArgument
-import androidx.work.WorkManager
 import com.example.aurora.data.local.AppDatabase
 import com.example.aurora.data.local.LocalDataSourceImp
 import com.example.aurora.data.model.map.Location
@@ -42,7 +41,6 @@ import com.example.aurora.workers.WeatherWorkManager
 import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.toString
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ForecastViewModel by viewModels {
@@ -75,10 +73,19 @@ class MainActivity : ComponentActivity() {
     private val _navigateToHome = MutableStateFlow(false)
     val navigateToHome = _navigateToHome.asStateFlow()
 
-    private fun navigateToHomeScreen() {
-        _navigateToHome.value = true
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
     }
 
+    private fun handleIntent(intent: Intent?) {
+        when (intent?.action) {
+            "WEATHER_ALERT" -> {
+                _navigateToHome.value = true
+            }
+        }
+    }
     private fun requestLocationPermission() {
         locationPermissionRequest.launch(
             arrayOf(
@@ -89,25 +96,28 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         setContent {
-            AppRoutes { isSplashScreen ->
-                if (!isSplashScreen) {
-                    enableEdgeToEdge()
+            Box(modifier = Modifier.fillMaxSize()) {
+                AppRoutes { isSplashScreen ->
+                    if (!isSplashScreen) {
+                        enableEdgeToEdge()
+                    }
                 }
             }
         }
         requestLocationPermission()
-        if (intent?.getStringExtra("destination") == "home") {
-            navigateToHomeScreen()
-        }
+//        if (intent?.getStringExtra("destination") == "home") {
+            handleIntent(intent)
+//        }
     }
 
     override fun onResume() {
         super.onResume()
         enableEdgeToEdge()
     }
-
 
 }
 
@@ -128,6 +138,7 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
         }
     }
 
+
     LaunchedEffect(activity.navigateToHome) {
         activity.navigateToHome.collect { shouldNavigate ->
             if (shouldNavigate) {
@@ -138,6 +149,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             }
         }
     }
+
+
     val forecastViewModel: ForecastViewModel = viewModel(
         factory = ForecastViewModel.Factory(
             WeatherRepositoryImp.getInstance(
@@ -190,85 +203,86 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
         )
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        NavHost(
-            navController = navController,
-            startDestination = Routes.SplashRoute.toString(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            composable(Routes.HomeRoute.toString()) {
-                LaunchedEffect(Unit) { onScreenChange(true) }
-                HomeScreen(
-                    forecastViewModel = forecastViewModel,
-                    onNavigateToFav = {
-                        navController.navigate(Routes.FavoritesRoute.toString())
-                    },
-                    onNavigateToAlerts = {
-                        navController.navigate(Routes.NotificationsRoute.toString())
-                    }
-                )
-            }
-
-            composable(Routes.SplashRoute.toString()) {
-                LaunchedEffect(Unit) { onScreenChange(false) }
-                SplashScreenUI(
-                    onNavigateToHome = {
-                        navController.navigate(Routes.HomeRoute.toString()) {
-                            popUpTo(Routes.SplashRoute.toString()) { inclusive = true }
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = Routes.SplashRoute.toString(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(Routes.HomeRoute.toString()) {
+                    LaunchedEffect(Unit) { onScreenChange(true) }
+                    HomeScreen(
+                        forecastViewModel = forecastViewModel,
+                        onNavigateToFav = {
+                            navController.navigate(Routes.FavoritesRoute.toString())
+                        },
+                        onNavigateToAlerts = {
+                            navController.navigate(Routes.NotificationsRoute.toString())
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(
-                route = "map/{lat}/{lon}",
-                arguments = listOf(
-                    navArgument("lat") { type = NavType.FloatType },
-                    navArgument("lon") { type = NavType.FloatType }
-                )
-            ) { backStackEntry ->
-                val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 30.0444
-                val lon = backStackEntry.arguments?.getFloat("lon")?.toDouble() ?: 31.2357
-
-                MapScreen(
-                    location = Location(lat, lon),
-                    onLocationSelected = { location ->
-                        forecastViewModel.updateLocation(location)
-                        navController.popBackStack()
-                    },
-                    viewModel = mapsViewModel
-                )
-            }
-
-            composable(Routes.FavoritesRoute.toString()) {
-                FavoriteScreen(
-                    viewModel = favViewModel,
-                    onBackClick = {
-//                        forecastViewModel.resetLocationFlags()
-                        navController.popBackStack() },
-                    onSearchClick = {
-                        val currentLocation = mapsViewModel.location.value
-                        val lat = currentLocation?.lat ?: 30.0444
-                        val lon = currentLocation?.lng ?: 31.2357
-                        navController.navigate(Routes.MapRoute(lat, lon).toString())
-                    },
-                    onFavoriteClicked = { location ->
-                        forecastViewModel.updateLocation(location)
-                        navController.navigate(Routes.HomeRoute.toString()) {
-                            popUpTo(0) { inclusive = true }
-                            launchSingleTop = true
+                composable(Routes.SplashRoute.toString()) {
+                    LaunchedEffect(Unit) { onScreenChange(false) }
+                    SplashScreenUI(
+                        onNavigateToHome = {
+                            navController.navigate(Routes.HomeRoute.toString()) {
+                                popUpTo(Routes.SplashRoute.toString()) { inclusive = true }
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Routes.NotificationsRoute.toString()) {
-                NotificationsScreen(
-                    onBackClick = {},
-                    viewModel = notificationsViewModel
-                )
+                composable(
+                    route = "map/{lat}/{lon}",
+                    arguments = listOf(
+                        navArgument("lat") { type = NavType.FloatType },
+                        navArgument("lon") { type = NavType.FloatType }
+                    )
+                ) { backStackEntry ->
+                    val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 30.0444
+                    val lon = backStackEntry.arguments?.getFloat("lon")?.toDouble() ?: 31.2357
+
+                    MapScreen(
+                        location = Location(lat, lon),
+                        onLocationSelected = { location ->
+                            forecastViewModel.updateLocation(location)
+                            navController.popBackStack()
+                        },
+                        viewModel = mapsViewModel
+                    )
+                }
+
+                composable(Routes.FavoritesRoute.toString()) {
+                    FavoriteScreen(
+                        viewModel = favViewModel,
+                        onBackClick = {
+                            //                        forecastViewModel.resetLocationFlags()
+                            navController.popBackStack()
+                        },
+                        onSearchClick = {
+                            val currentLocation = mapsViewModel.location.value
+                            val lat = currentLocation?.lat ?: 30.0444
+                            val lon = currentLocation?.lng ?: 31.2357
+                            navController.navigate(Routes.MapRoute(lat, lon).toString())
+                        },
+                        onFavoriteClicked = { location ->
+                            forecastViewModel.updateLocation(location)
+                            navController.navigate(Routes.HomeRoute.toString()) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
+                composable(Routes.NotificationsRoute.toString()) {
+                    NotificationsScreen(
+                        onBackClick = {},
+                        viewModel = notificationsViewModel,
+                    )
+                }
             }
         }
-
     }
-}
+

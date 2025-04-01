@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun WeatherCard(
-    title: String,
+//    title: String,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -32,27 +32,27 @@ fun WeatherCard(
         ,
 
     ) {
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-//            modifier = Modifier.padding(vertical = 8.dp)
-        )
+//        Text(
+//            text = title,
+//            color = Color.White,
+//            fontSize = 18.sp,
+//            fontWeight = FontWeight.Bold,
+////            modifier = Modifier.padding(vertical = 8.dp)
+//        )
         content()
     }
 }
 
-@Composable
-fun prevCard(){
-    WeatherCard(
-        title = "Previous Card"
-
-    ) { }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun previewCard() {
-    prevCard()
-}
+//@Composable
+//fun prevCard(){
+//    WeatherCard(
+//        title = "Previous Card"
+//
+//    ) { }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun previewCard() {
+//    prevCard()
+//}

@@ -9,16 +9,51 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.aurora.MainActivity
 import com.example.aurora.R
+import com.example.aurora.data.repo.WeatherRepository
+import com.example.aurora.utils.hasNetworkConnection
+import com.example.aurora.utils.toIntOrZero
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 
-class WeatherAlertWorker(private val context: Context) {
-
+class WeatherAlertWorker(
+    private val context: Context,
+    private val repository: WeatherRepository? = null
+) {
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     fun showWeatherAlert(alertId: String, useDefaultSound: Boolean) {
         createNotificationChannel()
 
+        scope.launch {
+            val weatherInfo = getWeatherInfo()
+            showNotification(alertId, useDefaultSound, weatherInfo)
+        }
+    }
+
+    private suspend fun getWeatherInfo(): WeatherInfo? {
+        return try {
+            repository?.getAllForecasts()?.firstOrNull()?.firstOrNull()?.let { forecast ->
+                WeatherInfo(
+                    temperature = forecast.list?.firstOrNull()?.main?.temp?.toIntOrZero(),
+                    description = forecast.list?.firstOrNull()?.weather?.firstOrNull()?.description
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun showNotification(
+        alertId: String,
+        useDefaultSound: Boolean,
+        weatherInfo: WeatherInfo?
+    ) {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            action = "WEATHER_ALERT"
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -39,18 +74,28 @@ class WeatherAlertWorker(private val context: Context) {
             dismissIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val isConnected = context.hasNetworkConnection()
+        val contentText = if (weatherInfo != null) {
+            if (isConnected) {
+                "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}"
+            }else{
+                "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}\n⚠️ This data is expired. Check your connection and try Aurora again."
+            }
+        } else {
+            "🌦️ Weather conditions update available"
+        }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Weather Alert")
-            .setContentText("Weather conditions update available")
+            .setSmallIcon(R.drawable.cloud_svg) // App logo
+            .setContentTitle("Aurora") // App name
+            .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .addAction(android.R.drawable.ic_delete, "Dismiss", dismissPendingIntent)
-            .setStyle(NotificationCompat.BigTextStyle())
+            .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
             .apply {
                 if (useDefaultSound) {
                     setDefaults(NotificationCompat.DEFAULT_ALL)
@@ -76,6 +121,11 @@ class WeatherAlertWorker(private val context: Context) {
             notificationManager?.createNotificationChannel(channel)
         }
     }
+
+    private data class WeatherInfo(
+        val temperature: Int?,
+        val description: String?
+    )
 
     companion object {
         const val CHANNEL_ID = "weather_alerts"

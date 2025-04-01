@@ -22,43 +22,31 @@ import androidx.compose.ui.unit.sp
 import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.utils.toIntOrZero
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
-
+import kotlin.text.format
+import kotlin.text.get
+import kotlin.text.toLong
 
 
 @Composable
 fun HourlyForecast(hourlyData: List<ListItem>) {
     val currentTimeMillis = remember { System.currentTimeMillis() }
-    val timeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     // Filter data for next 24 hours only
     val next24HoursForecast = remember(hourlyData) {
         hourlyData.filter { hourlyData ->
             try {
-                val dtTxt = hourlyData.dtTxt ?: return@filter false
-                if (dtTxt.startsWith("Now")) return@filter true
-
-                // Parse the time and date parts
-                val parts = dtTxt.split(", ")
-                if (parts.size != 2) return@filter false
-
-                val time = parts[0]
-                val date = parts[1]
-
-                val dateTimeStr = "$date $time:00"
-                val forecastDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .parse(dateTimeStr)?.time ?: return@filter false
+                val timestamp = hourlyData.dt?.toLong()?.times(1000) ?: return@filter false
 
                 // Check if forecast is within next 24 hours
-                forecastDateTime >= currentTimeMillis &&
-                        forecastDateTime <= (currentTimeMillis + 24 * 60 * 60 * 1000)
+                timestamp >= currentTimeMillis &&
+                        timestamp <= (currentTimeMillis + 24 * 60 * 60 * 1000)
             } catch (e: Exception) {
                 Log.e("HourlyForecast", "Error parsing date: ${e.message}")
                 false
             }
-        }.take(8).also {
-            Log.d("HourlyForecast", "Filtered forecast size: ${it.size}")
-        }
+        }.take(8)
     }
 
     // Only show if we have forecast data
@@ -97,8 +85,9 @@ fun HourlyForecast(hourlyData: List<ListItem>) {
 
 @Composable
 private fun HourlyForecastItem(data: ListItem) {
-    val timeText = remember(data.dtTxt) {
-        data.dtTxt?.split(", ")?.getOrNull(0) ?: "N/A"
+    val timeText = remember(data.dt) {
+        val timestamp = data.dt?.toLong()?.times(1000) ?: return@remember "N/A"
+        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(timestamp))
     }
 
     Column(
@@ -119,6 +108,3 @@ private fun HourlyForecastItem(data: ListItem) {
         )
     }
 }
-
-
-

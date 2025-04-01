@@ -48,6 +48,9 @@ import com.example.aurora.home.home_components.WindData
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.text.toFloat
 
 
@@ -184,6 +187,22 @@ fun HomeScreen(
                                     }
                                 }
                             }
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        Clouds(clouds = currentData.clouds?.all ?: 0)
+                                    }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        Pressure(pressure = currentData.main?.pressure ?: 0)
+                                    }
+                                }
+                            }
                         }
                     }
                     is ForecastUiState.Error -> {
@@ -209,7 +228,7 @@ fun CurrentWeatherContent(data: ListItem) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(52.dp))
+        Spacer(modifier = Modifier.height(36.dp))
         Text(
             text = "${(data.main?.temp as? Double)?.toInt()}°",
             fontSize = 80.sp,
@@ -223,92 +242,37 @@ fun CurrentWeatherContent(data: ListItem) {
             color = Color.White
         )
         Spacer(modifier = Modifier.height(20.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val currentDateTime = remember {
+                val dateFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+                val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+                val now = Date()
+                Pair(dateFormat.format(now), timeFormat.format(now))
+            }
+
+            Text(
+                text = currentDateTime.first, // Date
+                fontSize = 16.sp,
+                color = Color.White
+            )
+            Text(
+                text = " • ", // Separator
+                fontSize = 16.sp,
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+            Text(
+                text = currentDateTime.second, // Time
+                fontSize = 16.sp,
+                color = Color.White
+            )
+        }
     }
 }
-
-//@Composable
-//fun FeelsLike(feelsLike: Double) {
-//    Column(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(8.dp)
-//            .background(
-//                Color.White.copy(alpha = 0.1f),
-//                shape = RoundedCornerShape(10.dp)
-//            )
-//            .border(0.2.dp, Color.White, RoundedCornerShape(10.dp))
-//            .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
-//    ) {
-//        Row(
-//            modifier = Modifier.wrapContentSize(),
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.spacedBy(8.dp)
-//        ) {
-//            Image(
-//                painter = painterResource(id = R.drawable.feels_like_svg),
-//                contentDescription = "Feels Like Icon",
-//                modifier = Modifier.size(24.dp)
-//            )
-//            Text(
-//                "Feels Like",
-//                color = Color.White,
-//                fontSize = 18.sp,
-//                fontWeight = FontWeight.Bold,
-//                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-//            )
-//        }
-//
-//        Text(
-//            text = "${feelsLike.toInt()}°",
-//            color = Color.White,
-//            fontSize = 24.sp,
-//            fontWeight = FontWeight.Bold,
-//            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-//        )
-//    }
-//}
-//
-//@Composable
-//fun Humidity(humidity: Int) {
-//    Column(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(8.dp)
-//            .background(
-//                Color.White.copy(alpha = 0.1f),
-//                shape = RoundedCornerShape(10.dp)
-//            )
-//            .border(0.2.dp, Color.White, RoundedCornerShape(10.dp))
-//            .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
-//    ) {
-//        Row(
-//            modifier = Modifier.wrapContentSize(),
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.spacedBy(8.dp)
-//        ) {
-//            Image(
-//                painter = painterResource(id = R.drawable.humidity_svg),
-//                contentDescription = "Humidity Icon",
-//                modifier = Modifier.size(24.dp)
-//            )
-//            Text(
-//                "Humidity",
-//                color = Color.White,
-//                fontSize = 18.sp,
-//                fontWeight = FontWeight.Bold,
-//                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-//            )
-//        }
-//
-//        Text(
-//            text = "$humidity%",
-//            color = Color.White,
-//            fontSize = 24.sp,
-//            fontWeight = FontWeight.Bold,
-//            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-//        )
-//    }
-//}
 
 
 @Composable
@@ -329,15 +293,23 @@ fun Humidity(humidity: Int) {
     )
 }
 
-//@Composable
-//fun testUI(){
-//    FeelsLike(17.0)
-//}
-//
-//@Preview
-//@Composable
-//fun HomeScreenPreview() {
-//testUI()
-//}
+@Composable
+fun Pressure(pressure: Int) {
+    MetricsCard(
+        title = "Pressure",
+        value = "$pressure hPa",
+        iconResId = R.drawable.pressure_svg
+    )
+}
+
+@Composable
+fun Clouds(clouds: Int) {
+    MetricsCard(
+        title = "Clouds",
+        value = "$clouds%",
+        iconResId = R.drawable.cloud_svg
+    )
+}
+
 
 
