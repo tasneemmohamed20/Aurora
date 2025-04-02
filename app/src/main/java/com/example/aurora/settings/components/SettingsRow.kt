@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -62,7 +61,7 @@ fun SettingRow(
                 color = Color.White.copy(alpha = 0.7f)
             )
             Image(
-                painter = painterResource(R.drawable.expand_list_svg),
+                painter = painterResource(R.drawable.expand_svg),
                 contentDescription = "Icon",
                 modifier = Modifier
                     .size(20.dp)

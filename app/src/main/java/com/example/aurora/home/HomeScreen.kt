@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,7 +52,6 @@ import com.example.aurora.ui.theme.gradientBrush
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.text.toFloat
 
 
 @Composable
@@ -61,25 +61,25 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToAlerts: () -> Unit,
 ) {
-
     LaunchedEffect(Unit) {
         forecastViewModel.resetToCurrentLocation()
     }
     val cityName by forecastViewModel.cityName.collectAsState()
     val forecastState by forecastViewModel.forecastState.collectAsState()
     val showHomeDialog by forecastViewModel.homeDialogVisible.collectAsState()
+    val context = LocalContext.current
 
     if (showHomeDialog) {
         AlertDialog(
             onDismissRequest = { forecastViewModel.dismissHomeDialog() },
-            title = { Text("Set Home Location") },
-            text = { Text("Would you like to set your current location as home?") },
+            title = { Text(context.resources.getString(R.string.setHomeLocation)) },
+            text = { Text(context.resources.getString(R.string.setHomeLocation_msg)) },
             confirmButton = {
                 Button(
                     onClick = { forecastViewModel.confirmHomeLocation() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Yes")
+                    Text(context.resources.getString(R.string.yes))
                 }
             },
             dismissButton = {
@@ -87,7 +87,7 @@ fun HomeScreen(
                     onClick = { forecastViewModel.dismissHomeDialog() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text("No")
+                    Text(context.resources.getString(R.string.no))
                 }
             }
         )
@@ -122,8 +122,8 @@ fun HomeScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
                             onSettingsClick = onNavigateToSettings,
-                            onAlertsClick = onNavigateToAlerts
-
+                            onAlertsClick = onNavigateToAlerts,
+                            context = context
                         )
                     }
                 },
@@ -160,7 +160,7 @@ fun HomeScreen(
                             item { CurrentWeatherContent(currentData) }
                             item {
                                 HourlyForecast(forecastData)
-                                DailyForecast(forecastData)
+                                DailyForecast(forecastData, context)
                             }
                             item {
                                 WindData(
@@ -235,7 +235,7 @@ fun CurrentWeatherContent(data: ListItem) {
         )
         Text(
             text = data.weather?.firstOrNull()?.description?.replaceFirstChar { it.uppercase() }
-                ?: "Unknown",
+                ?: LocalContext.current.resources.getString(R.string.unknown),
             fontSize = 20.sp,
             color = Color.White
         )
@@ -276,7 +276,7 @@ fun CurrentWeatherContent(data: ListItem) {
 @Composable
 fun FeelsLike(feelsLike: Double) {
     MetricsCard(
-        title = "Feels Like",
+        title = LocalContext.current.resources.getString(R.string.FeelsLike),
         value = "${feelsLike.toInt()}°",
         iconResId = R.drawable.feels_like_svg
     )
@@ -285,7 +285,7 @@ fun FeelsLike(feelsLike: Double) {
 @Composable
 fun Humidity(humidity: Int) {
     MetricsCard(
-        title = "Humidity",
+        title = LocalContext.current.resources.getString(R.string.Humidity),
         value = "$humidity%",
         iconResId = R.drawable.humidity_svg
     )
@@ -294,7 +294,7 @@ fun Humidity(humidity: Int) {
 @Composable
 fun Pressure(pressure: Int) {
     MetricsCard(
-        title = "Pressure",
+        title = LocalContext.current.resources.getString(R.string.Pressure),
         value = "$pressure hPa",
         iconResId = R.drawable.pressure_svg
     )
@@ -303,7 +303,7 @@ fun Pressure(pressure: Int) {
 @Composable
 fun Clouds(clouds: Int) {
     MetricsCard(
-        title = "Clouds",
+        title = LocalContext.current.resources.getString(R.string.Clouds),
         value = "$clouds%",
         iconResId = R.drawable.cloud_svg
     )

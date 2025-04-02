@@ -24,6 +24,7 @@ fun SettingsDropdownMenu(
 ) {
     var isDarkTheme = isSystemInDarkTheme()
     val menuColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.Black
 
     DropdownMenu(
         expanded = expanded,
@@ -38,7 +39,7 @@ fun SettingsDropdownMenu(
                 text = {
                     Text(
                         text = option,
-                        color = Color.White,
+                        color = textColor,
                         fontSize = 16.sp
                     )
                 },

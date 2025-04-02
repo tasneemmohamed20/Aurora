@@ -30,6 +30,7 @@
             android:value="@string/MAPS_API_KEY" />
         <activity
             android:name=".MainActivity"
+            android:configChanges="locale|layoutDirection"
             android:exported="true"
             android:theme="@style/Theme.Aurora">
             <intent-filter>

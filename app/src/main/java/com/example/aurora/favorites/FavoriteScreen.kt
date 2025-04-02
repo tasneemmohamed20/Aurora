@@ -1,6 +1,6 @@
-// File: app/src/main/java/com/example/aurora/favorites/FavoriteScreen.kt
 package com.example.aurora.favorites
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,7 +29,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,10 +45,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aurora.R
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.CustomFab
@@ -70,7 +69,7 @@ fun FavoriteScreen(
 
     val queryState = remember { mutableStateOf("") }
     val activeState = remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
 
     SearchBarState(
         query = queryState.value,
@@ -147,7 +146,8 @@ fun FavoriteScreen(
                                             )
                                         )
                                     },
-                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp),
+                                    context = context
                                 )
                             }
                         }
@@ -182,7 +182,8 @@ fun FavoriteScreen(
                                         )
                                     )
                                 },
-                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
+                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp),
+                                context = context
                             )
                         }
                     }
@@ -219,7 +220,8 @@ fun SwipeableFavoriteCard(
     currentTemp: Double,
     isHome: Boolean = false,
     onDelete: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    context : Context
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showHomeWarningDialog by remember { mutableStateOf(false) }
@@ -239,8 +241,8 @@ fun SwipeableFavoriteCard(
     if (showHomeWarningDialog) {
         AlertDialog(
             onDismissRequest = { showHomeWarningDialog = false },
-            title = { Text("Cannot Delete Home") },
-            text = { Text("The home location cannot be deleted. Please set another location as home first if you want to remove this one.") },
+            title = { Text(context.resources.getString(R.string.cantDel)) },
+            text = { Text(context.resources.getString(R.string.cantDel_mgs)) },
             confirmButton = {
                 Button(
                     onClick = { showHomeWarningDialog = false },
@@ -248,7 +250,7 @@ fun SwipeableFavoriteCard(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("OK")
+                    Text(context.resources.getString(R.string.ok))
                 }
             }
         )
@@ -257,8 +259,8 @@ fun SwipeableFavoriteCard(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Location") },
-            text = { Text("Are you sure you want to delete this location from favorites?") },
+            title = { Text(context.resources.getString(R.string.delete_location))},
+            text = { Text(context.resources.getString(R.string.delete_location_msg)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -269,7 +271,7 @@ fun SwipeableFavoriteCard(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(context.resources.getString(R.string.delete))
                 }
             },
             dismissButton = {
@@ -279,7 +281,7 @@ fun SwipeableFavoriteCard(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
-                    Text("Cancel")
+                    Text(context.resources.getString(R.string.cancel))
                 }
             }
         )

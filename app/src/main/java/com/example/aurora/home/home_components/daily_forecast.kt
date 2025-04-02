@@ -1,5 +1,6 @@
 package com.example.aurora.home.home_components
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -28,9 +29,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aurora.R
 import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.utils.toDoubleOrZero
 import java.text.SimpleDateFormat
@@ -39,7 +42,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 
 @Composable
-fun DailyForecast(hourlyData: List<ListItem>) {
+fun DailyForecast(hourlyData: List<ListItem>, context: Context) {
     val dailyForecasts = remember(hourlyData) {
         hourlyData.groupBy { item ->
             // Split by comma and get the date part
@@ -70,7 +73,7 @@ fun DailyForecast(hourlyData: List<ListItem>) {
         }.distinctBy { it.dayName } // Remove duplicates
             .take(5) // Take only 5 days
             .mapIndexed { index, data ->
-                if (index == 0) data.copy(dayName = "Today") else data
+                if (index == 0) data.copy(dayName = context.resources.getString(R.string.today)) else data
             }
     }
 
@@ -95,7 +98,7 @@ fun DailyForecast(hourlyData: List<ListItem>) {
                 modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 16.dp)
             )
             Text(
-                "5-Day Forecast",
+                LocalContext.current.resources.getString(R.string.DayForeCast),
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,

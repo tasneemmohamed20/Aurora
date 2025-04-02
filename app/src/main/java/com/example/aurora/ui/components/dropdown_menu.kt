@@ -1,5 +1,6 @@
 package com.example.aurora.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.width
@@ -14,14 +15,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.aurora.R
 
 @Composable
 fun MenuOptions(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     onSettingsClick: () -> Unit,
-    onAlertsClick: () -> Unit
+    onAlertsClick: () -> Unit,
+    context: Context
 ) {
+
     var isDark = isSystemInDarkTheme()
     var bgColor = if (isDark) {
         Color.Black
@@ -42,7 +46,7 @@ fun MenuOptions(
             .background(bgColor)
     ) {
         DropdownMenuItem(
-            text = { Text("Settings", color = textColor) },
+            text = { Text(context.resources.getString(R.string.settings), color = textColor) },
             onClick = {
                 onSettingsClick()
                 onDismissRequest()
@@ -56,7 +60,7 @@ fun MenuOptions(
             }
         )
         DropdownMenuItem(
-            text = { Text("Alerts", color = textColor) },
+            text = { Text(context.resources.getString(R.string.notifications), color = textColor) },
             onClick = {
                 onAlertsClick()
                 onDismissRequest()

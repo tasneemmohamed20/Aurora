@@ -17,18 +17,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aurora.R
+import com.example.aurora.settings.SettingsManager
 
 @Composable
 fun WindData(windSpeed: Double, windGust: Double, windDirection: Float) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,7 +57,7 @@ fun WindData(windSpeed: Double, windGust: Double, windDirection: Float) {
                 modifier = Modifier.size(24.dp)
             )
             Text(
-                "Wind",
+                LocalContext.current.resources.getString(R.string.Wind),
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -75,9 +80,9 @@ fun WindData(windSpeed: Double, windGust: Double, windDirection: Float) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                WindDataRow("Wind", "${windSpeed.toInt()} mph")
-                WindDataRow("Gusts", "${windGust.toInt()} mph")
-                WindDataRow("Direction", "$windDirection° NNW")
+                WindDataRow(LocalContext.current.resources.getString(R.string.Wind), "${windSpeed.toInt()} ${settingsManager.getSpeedUnit()}")
+                WindDataRow(LocalContext.current.resources.getString(R.string.gust), "${windGust.toInt()} ${settingsManager.getSpeedUnit()}")
+                WindDataRow(LocalContext.current.resources.getString(R.string.direction), "$windDirection° NNW")
             }
             Spacer(Modifier.width(16.dp))
             WindDirectionCompass(windDirection, windSpeed)
@@ -107,6 +112,8 @@ private fun WindDataRow(label: String, value: String) {
 
 @Composable
 private fun WindDirectionCompass(windDirection: Float, windSpeed: Double) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(120.dp)
@@ -126,7 +133,7 @@ private fun WindDirectionCompass(windDirection: Float, windSpeed: Double) {
         )
         Column {
             Text(
-                text = "mph",
+                text = settingsManager.getSpeedUnit(),
                 color = Color.Black,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,

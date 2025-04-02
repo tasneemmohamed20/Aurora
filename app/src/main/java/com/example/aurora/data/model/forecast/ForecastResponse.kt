@@ -8,7 +8,7 @@ import com.google.gson.annotations.SerializedName
 
 @Entity(
 	tableName = "forecast_table",
-	primaryKeys = ["city_city_name"]
+	primaryKeys = ["city_coord_lon", "city_coord_lat"]
 )
 data class ForecastResponse(
 	@Embedded(prefix = "city_") @NonNull
@@ -39,7 +39,8 @@ data class Rain(
 
 data class City(
 	val country: String? = null,
-	val coord: Coord? = null,
+	@Embedded(prefix = "coord_") @NonNull
+	val coord: Coord,
 	val sunrise: Int? = null,
 	val timezone: Int? = null,
 	val sunset: Int? = null,
@@ -50,8 +51,10 @@ data class City(
 )
 
 data class Coord(
-	val lon: Any? = null,
-	val lat: Any? = null
+	@NonNull @ColumnInfo(name = "lon")
+	val lon: Any,
+	@NonNull @ColumnInfo(name = "lat")
+	val lat: Any
 )
 
 data class Clouds(

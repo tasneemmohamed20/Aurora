@@ -16,9 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aurora.R
 import com.example.aurora.data.model.forecast.ListItem
 import com.example.aurora.utils.toIntOrZero
 import java.text.SimpleDateFormat
@@ -62,7 +64,7 @@ fun HourlyForecast(hourlyData: List<ListItem>) {
                 .border(0.2.dp, Color.White, RoundedCornerShape(10.dp))
         ) {
             Text(
-                "24-Hour Forecast",
+                LocalContext.current.resources.getString(R.string.HourForeCast),
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,

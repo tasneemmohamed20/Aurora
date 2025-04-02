@@ -1,0 +1,66 @@
+<resources>
+    <string name="app_name">Aurora</string>
+    <string name="title_activity_splash_screen">SplashScreen</string>
+    <string name="title_activity_home_screen">HomeScreen</string>
+    <string name="weather_api_key">97ad72691a7bd2c8f56c772da5029512</string>
+    <!--    <string name="MAPS_API_KEY">AIzaSyDz6_hjwIQjgeaJzmDLKzPGLmkbmJiTayQ</string> // mine-->
+    <string name="MAPS_API_KEY">AIzaSyB9cRwZcC2Kirk3Fy2sCEtPUv3zIqRn6Jk</string> <!-- Reda's one-->
+
+    <string name="settings">الإعدادات</string>
+    <string name="temperature">درجة الحرارة</string>
+    <string name="temperatureunit">وحدة درجة الحرارة</string>
+    <string name="wind_speed">سرعة الرياح</string>
+    <string name="wind_speedunit">وحدة سرعة الرياح</string>
+    <string name="location">الموقع</string>
+    <string name="language">اللغة</string>
+    <string name="gps">نظام تحديد المواقع</string>
+    <string name="HourForeCast"> توقعات 24 ساعة</string>
+    <string name="DayForeCast">توقعات 5 أيام</string>
+    <string name="Wind">الريح</string>
+    <string name="Humidity">الرطوبة</string>
+    <string name="Clouds">السحب</string>
+    <string name="Pressure">الضغط</string>
+    <string name="FeelsLike">تشعر به</string>
+    <string name="notifications">الإشعارات</string>
+
+    <string name="gust">العصفة</string>
+    <string name="direction">الإتجاه</string>
+    <string name="fav">المفضلة</string>
+    <string name="delete_location">حذف الموقع</string>
+    <string name="delete_location_msg">
+        هل أنت متأكد أنك تريد حذف هذا الموقع من المفضلة؟
+    </string>
+    <string name="delete">حذف</string>
+    <string name="cancel">إالغاء</string>
+    <string name="cantDel">
+        لا يمكن حذف الموقع الرئيسي
+    </string>
+    <string name="cantDel_mgs">
+        لا يمكنك حذف الموقع الرئيسي. يرجى تعيين موقع آخر كموقع رئيسي قبل حذف هذا الموقع.
+    </string>
+    <string name="ok">حسنًا</string>
+    <string name="NoActiveNotifications">
+        لا توجد إشعارات نشطة
+    </string>
+    <string name="NoActiveNotifications_msg">
+        ابدأ بإضافة إشعار…
+    </string>
+    <string name="setHomeLocation">تعيين الموقع الرئيسي</string>
+    <string name="setHomeLocation_msg">
+        هل ترغب في تعيين موقعك الحالي كموقع رئيسي؟
+    </string>
+    <string name="yes">حسنًا</string>
+    <string name="no">لا</string>
+    <string name="today">اليوم</string>
+    <string name="unknown">غير معروف</string>
+
+    <string name="celsius">سيليزيوس</string>
+    <string name="fahrenheit">فهرنهايت</string>
+    <string name="kelvin">كلفن</string>
+    <string name="meters_per_second">م/ث</string>
+    <string name="miles_per_hour">ميل/س</string>
+    <string name="english">الإنجليزية</string>
+    <string name="arabic">العربية</string>
+
+
+</resources>

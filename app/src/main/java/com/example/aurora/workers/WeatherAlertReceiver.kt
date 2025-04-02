@@ -9,6 +9,7 @@ import com.example.aurora.data.local.AppDatabase
 import com.example.aurora.data.local.LocalDataSourceImp
 import com.example.aurora.data.remote.RemoteDataSourceImp
 import com.example.aurora.data.repo.WeatherRepositoryImp
+import com.example.aurora.settings.SettingsManager
 
 class WeatherAlertReceiver : BroadcastReceiver() {
 
@@ -33,7 +34,8 @@ class WeatherAlertReceiver : BroadcastReceiver() {
                     val repository = WeatherRepositoryImp.getInstance(
                         RemoteDataSourceImp(),
                         LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
-                        context
+                        context,
+                        SettingsManager(context)
                     )
                     WeatherAlertWorker(context, repository).showWeatherAlert(alertId, useDefaultSound)
                 }

@@ -1,8 +1,10 @@
 package com.example.aurora
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,11 +13,14 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,14 +41,30 @@ import com.example.aurora.map.MapsViewModel
 import com.example.aurora.notifications.NotificationsScreen
 import com.example.aurora.notifications.NotificationsViewModel
 import com.example.aurora.router.Routes
+import com.example.aurora.settings.SettingsManager
 import com.example.aurora.settings.SettingsScreen
+import com.example.aurora.settings.SettingsViewModel
+import com.example.aurora.utils.LocaleHelper
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
+    private lateinit var settingsManager: SettingsManager
+
+    override fun attachBaseContext(newBase: Context) {
+        settingsManager = SettingsManager(newBase)
+        val language = settingsManager.language
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, language))
+        // Force RTL on initial creation
+        window?.decorView?.layoutDirection =
+            if (language == "ar") View.LAYOUT_DIRECTION_RTL
+            else View.LAYOUT_DIRECTION_LTR
+    }
+
     private val viewModel: ForecastViewModel by viewModels {
         ForecastViewModel.Factory(
             WeatherRepositoryImp.getInstance(
@@ -51,12 +72,14 @@ class MainActivity : ComponentActivity() {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(this).getForecastDao()
                 ),
-                this
+                this,
+                settingsManager
             ),
             LocationHelper(this),
             WeatherWorkManager(this)
         )
     }
+
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -96,23 +119,47 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
-
-
         super.onCreate(savedInstanceState)
+        // Force RTL/LTR at activity creation
+        val language = settingsManager.language
+        window.decorView.layoutDirection =
+            if (language == "ar") View.LAYOUT_DIRECTION_RTL
+            else View.LAYOUT_DIRECTION_LTR
+
         setContent {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AppRoutes { isSplashScreen ->
-                    if (!isSplashScreen) {
-                        enableEdgeToEdge()
+            // Use CompositionLocalProvider to force layout direction
+            CompositionLocalProvider(
+                LocalLayoutDirection provides if (language == "ar") LayoutDirection.Rtl else LayoutDirection.Ltr
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AppRoutes { isSplashScreen ->
+                        if (!isSplashScreen) {
+                            enableEdgeToEdge()
+                        }
                     }
                 }
             }
         }
         requestLocationPermission()
-//        if (intent?.getStringExtra("destination") == "home") {
-            handleIntent(intent)
-//        }
+        handleIntent(intent)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val language = settingsManager.language
+        val context = LocaleHelper.setLocale(this, language)
+        resources.updateConfiguration(context.resources.configuration, context.resources.displayMetrics)
+
+        // Force RTL/LTR on configuration change
+        window.decorView.layoutDirection =
+            if (language == "ar") View.LAYOUT_DIRECTION_RTL
+            else View.LAYOUT_DIRECTION_LTR
+
+        // Recreate activity to ensure all composables get the new direction
+//        recreate()
     }
 
     override fun onResume() {
@@ -128,6 +175,7 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
     val view = LocalView.current
     val activity = remember(view) { view.context as MainActivity }
     val context = LocalContext.current
+    val settingsManager = SettingsManager(context)
     val placesClient = remember {
         try {
             Places.createClient(context)
@@ -159,7 +207,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context
+                context,
+                settingsManager
             ),
             LocationHelper(context),
             WeatherWorkManager(context)
@@ -174,7 +223,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context
+                context,
+                settingsManager
             ),
             placesClient
         )
@@ -187,7 +237,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context
+                context,
+                settingsManager
             )
         )
     )
@@ -197,9 +248,23 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             repository = WeatherRepositoryImp.getInstance(
                 RemoteDataSourceImp(),
                 LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
-                context
+                context,
+                settingsManager
             ),
             workManager = WeatherWorkManager(context),
+            context = context
+        )
+    )
+
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModel.Factory(
+            settingsManager = settingsManager,
+            weatherRepository = WeatherRepositoryImp.getInstance(
+                RemoteDataSourceImp(),
+                LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
+                context,
+                settingsManager
+            ),
             context = context
         )
     )
@@ -291,7 +356,8 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                     SettingsScreen(
                         onBackClick = {
                             navController.popBackStack()
-                        }
+                        },
+                        settingsViewModel
                     )
                 }
             }
