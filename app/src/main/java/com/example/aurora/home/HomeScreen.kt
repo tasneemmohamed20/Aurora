@@ -58,7 +58,7 @@ import kotlin.text.toFloat
 fun HomeScreen(
     forecastViewModel: ForecastViewModel,
     onNavigateToFav: () -> Unit,
-//    onNavigateToSettings: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToAlerts: () -> Unit,
 ) {
 
@@ -121,9 +121,7 @@ fun HomeScreen(
                         MenuOptions(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            onSettingsClick = {
-                                // Handle settings navigation
-                            },
+                            onSettingsClick = onNavigateToSettings,
                             onAlertsClick = onNavigateToAlerts
 
                         )

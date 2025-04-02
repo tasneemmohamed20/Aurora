@@ -36,6 +36,7 @@ import com.example.aurora.map.MapsViewModel
 import com.example.aurora.notifications.NotificationsScreen
 import com.example.aurora.notifications.NotificationsViewModel
 import com.example.aurora.router.Routes
+import com.example.aurora.settings.SettingsScreen
 import com.example.aurora.utils.LocationHelper
 import com.example.aurora.workers.WeatherWorkManager
 import com.google.android.libraries.places.api.Places
@@ -218,7 +219,10 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                         },
                         onNavigateToAlerts = {
                             navController.navigate(Routes.NotificationsRoute.toString())
-                        }
+                        },
+                        onNavigateToSettings = {
+                            navController.navigate(Routes.SettingsRoute.toString())
+                        },
                     )
                 }
 
@@ -280,6 +284,14 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                     NotificationsScreen(
                         onBackClick = {},
                         viewModel = notificationsViewModel,
+                    )
+                }
+
+                composable(Routes.SettingsRoute.toString()) {
+                    SettingsScreen(
+                        onBackClick = {
+                            navController.popBackStack()
+                        }
                     )
                 }
             }
