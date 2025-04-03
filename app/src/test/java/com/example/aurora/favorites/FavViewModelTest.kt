@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.repo.WeatherRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,19 +60,20 @@ class FavViewModelTest {
         // given
         val forecast = ForecastResponse(mockk(relaxed = true))
         val testForecasts = listOf(forecast)
-        coEvery { repository.deleteForecast(forecast) } returns 1
-        coEvery { repository.getAllForecasts() } returns flowOf(testForecasts)
+        coEvery { repository.getAllForecasts() } returns flowOf(testForecasts, emptyList())
 
-        // Load initial state
+        // when
         favViewModel.loadFavorites()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // when
         favViewModel.deleteFavorite(forecast)
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle() //advancing the virtual time as needed until there are no more tasks associated with the dispatchers linked to this scheduler.
+
 
         // then
+        coVerify { repository.deleteForecast(forecast) }
         assert(favViewModel.uiState.value is FavUiState.Success)
+        assert((favViewModel.uiState.value as FavUiState.Success).forecasts.isEmpty())
     }
 
 }
