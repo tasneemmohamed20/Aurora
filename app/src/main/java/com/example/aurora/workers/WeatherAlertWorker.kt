@@ -7,35 +7,41 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
 import com.example.aurora.MainActivity
 import com.example.aurora.R
-import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.hasNetworkConnection
 import com.example.aurora.utils.toIntOrZero
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class WeatherAlertWorker(
     private val context: Context,
-    private val repository: WeatherRepository? = null
-) {
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
-    private val scope = CoroutineScope(Dispatchers.IO)
 
-    fun showWeatherAlert(alertId: String, useDefaultSound: Boolean) {
-        createNotificationChannel()
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            val alertId = inputData.getString(EXTRA_ALERT_ID) ?: return@withContext Result.failure()
+            val useDefaultSound = inputData.getBoolean("useDefaultSound", true)
 
-        scope.launch {
+            createNotificationChannel()
             val weatherInfo = getWeatherInfo()
             showNotification(alertId, useDefaultSound, weatherInfo)
+
+            Result.success()
+        } catch (_: Exception) {
+            Result.failure()
         }
     }
 
     private suspend fun getWeatherInfo(): WeatherInfo? {
         return try {
-            repository?.getAllForecasts()?.firstOrNull()?.firstOrNull()?.let { forecast ->
+            WorkerUtils.getRepository().getAllForecasts().firstOrNull()?.firstOrNull()?.let { forecast ->
                 WeatherInfo(
                     temperature = forecast.list?.firstOrNull()?.main?.temp?.toIntOrZero(),
                     description = forecast.list?.firstOrNull()?.weather?.firstOrNull()?.description
@@ -74,11 +80,12 @@ class WeatherAlertWorker(
             dismissIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
         val isConnected = context.hasNetworkConnection()
         val contentText = if (weatherInfo != null) {
             if (isConnected) {
                 "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}"
-            }else{
+            } else {
                 "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}\n⚠️ This data is expired. Check your connection and try Aurora again."
             }
         } else {
@@ -86,8 +93,8 @@ class WeatherAlertWorker(
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.cloud_svg) // App logo
-            .setContentTitle("Aurora") // App name
+            .setSmallIcon(R.drawable.cloud_svg)
+            .setContentTitle("Aurora")
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)

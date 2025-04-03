@@ -96,9 +96,47 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Testing
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1")
-    testImplementation("org.mockito:mockito-core:5.3.1")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    // Dependencies for local unit tests
+    testImplementation (libs.junit)
+    testImplementation (libs.hamcrest.all)
+    testImplementation (libs.androidx.arch.core.core.testing)
+    testImplementation (libs.robolectric.robolectric)
+
+    // AndroidX Test - JVM testing
+    testImplementation (libs.test.core.ktx)
+    //testImplementation "androidx.test.ext:junit:$androidXTestExtKotlinRunnerVersion"
+
+    // AndroidX Test - Instrumented testing
+    androidTestImplementation (libs.androidx.core)
+    androidTestImplementation (libs.androidx.espresso.core)
+
+    //Timber
+    implementation (libs.timber)
+
+    // hamcrest
+    testImplementation (libs.org.hamcrest.hamcrest)
+    testImplementation (libs.hamcrest.hamcrest.library)
+    androidTestImplementation (libs.org.hamcrest.hamcrest)
+    androidTestImplementation (libs.hamcrest.hamcrest.library)
+
+
+    // AndroidX and Robolectric
+    testImplementation (libs.androidx.junit.ktx)
+    testImplementation (libs.test.core.ktx)
+    testImplementation (libs.robolectric.robolectric)
+
+    // InstantTaskExecutorRule
+    testImplementation (libs.androidx.arch.core.core.testing)
+    androidTestImplementation (libs.androidx.arch.core.core.testing)
+
+    //kotlinx-coroutines
+    implementation (libs.kotlinx.coroutines.android)
+    testImplementation (libs.jetbrains.kotlinx.coroutines.test)
+    androidTestImplementation (libs.jetbrains.kotlinx.coroutines.test)
+
+
+    //MockK
+    testImplementation (libs.mockk.android)
+    testImplementation (libs.mockk.agent)
+    implementation (libs.kotlin.test)
 }

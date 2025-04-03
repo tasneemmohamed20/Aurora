@@ -72,7 +72,6 @@ class MainActivity : ComponentActivity() {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(this).getForecastDao()
                 ),
-                this,
                 settingsManager
             ),
             LocationHelper(this),
@@ -158,8 +157,6 @@ class MainActivity : ComponentActivity() {
             if (language == "ar") View.LAYOUT_DIRECTION_RTL
             else View.LAYOUT_DIRECTION_LTR
 
-        // Recreate activity to ensure all composables get the new direction
-//        recreate()
     }
 
     override fun onResume() {
@@ -207,7 +204,6 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context,
                 settingsManager
             ),
             LocationHelper(context),
@@ -223,7 +219,6 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context,
                 settingsManager
             ),
             placesClient
@@ -237,7 +232,6 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                context,
                 settingsManager
             )
         )
@@ -248,7 +242,6 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             repository = WeatherRepositoryImp.getInstance(
                 RemoteDataSourceImp(),
                 LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
-                context,
                 settingsManager
             ),
             workManager = WeatherWorkManager(context),
@@ -262,14 +255,13 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
             weatherRepository = WeatherRepositoryImp.getInstance(
                 RemoteDataSourceImp(),
                 LocalDataSourceImp(AppDatabase.getInstance(context).getForecastDao()),
-                context,
                 settingsManager
             ),
             context = context
         )
     )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
                 startDestination = Routes.SplashRoute.toString(),

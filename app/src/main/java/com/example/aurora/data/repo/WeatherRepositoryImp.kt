@@ -1,9 +1,6 @@
 // File: `app/src/main/java/com/example/aurora/data/repo/WeatherRepositoryImp.kt`
 package com.example.aurora.data.repo
 
-import android.content.Context
-import android.util.Log
-import com.example.aurora.R
 import com.example.aurora.data.local.LocalDataSource
 import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.data.model.forecast.ForecastResponse
@@ -12,17 +9,15 @@ import com.example.aurora.settings.SettingsManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlin.toString
 
-class WeatherRepositoryImp private constructor(
+class WeatherRepositoryImp(
     private val remoteDataSource: RemoteDataSource,
     private val localDataSource: LocalDataSource,
-    private val context: Context,
     private val settingsManager: SettingsManager
 ) : WeatherRepository {
 
-    private val apiKey = context.getString(R.string.weather_api_key)
-    private val geocodingApiKey = context.getString(R.string.MAPS_API_KEY)
+    private val apiKey = "97ad72691a7bd2c8f56c772da5029512"
+    private val geocodingApiKey = "AIzaSyB9cRwZcC2Kirk3Fy2sCEtPUv3zIqRn6Jk"
 
 //    private val currentLocale: String
 //        get() = context.resources.configuration.locales[0].toString().substring(0, 2)
@@ -126,18 +121,17 @@ class WeatherRepositoryImp private constructor(
     }
 
     companion object {
+
         private var instance: WeatherRepositoryImp? = null
         fun getInstance(
             remoteDataSource: RemoteDataSource,
             localDataSource: LocalDataSource,
-            context: Context,
             settingsManager: SettingsManager
         ): WeatherRepositoryImp {
             return instance ?: synchronized(this) {
                 val temp = WeatherRepositoryImp(
                     remoteDataSource,
                     localDataSource,
-                    context,
                     settingsManager
                 )
                 instance = temp

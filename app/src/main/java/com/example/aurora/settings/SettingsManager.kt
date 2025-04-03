@@ -2,7 +2,7 @@ package com.example.aurora.settings
 
 import android.content.Context
 
-class SettingsManager(private val context: Context) {
+open class SettingsManager(private val context: Context) {
     private val prefs by lazy {
         context.applicationContext.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
     }
@@ -24,7 +24,7 @@ class SettingsManager(private val context: Context) {
 
 
     // Temperature unit with proper API parameter values
-    var temperatureUnit: String
+    open var temperatureUnit: String
         get() = prefs.getString(PREF_TEMPERATURE_UNIT, UNIT_METRIC) ?: UNIT_METRIC
         set(value) {
             val validUnit = when (value) {
@@ -37,7 +37,7 @@ class SettingsManager(private val context: Context) {
         }
 
     // Display value for UI
-    fun getDisplayTemperatureUnit(): String {
+    open fun getDisplayTemperatureUnit(): String {
         return when (temperatureUnit) {
             UNIT_METRIC -> "C"
             UNIT_IMPERIAL -> "F"
@@ -46,7 +46,7 @@ class SettingsManager(private val context: Context) {
         }
     }
 
-    fun getSpeedUnit(): String {
+    open fun getSpeedUnit(): String {
         return when (temperatureUnit) {
             UNIT_METRIC -> "m/s"
             UNIT_IMPERIAL -> "Mp/h"
@@ -55,7 +55,7 @@ class SettingsManager(private val context: Context) {
     }
 
     // Helper function to get both units for display
-    fun getDisplayUnits(): Pair<String, String> {
+    open fun getDisplayUnits(): Pair<String, String> {
         return when (temperatureUnit) {
             UNIT_METRIC -> Pair("C", "m/s")
             UNIT_IMPERIAL -> Pair("F", "Mp/h")
@@ -67,7 +67,7 @@ class SettingsManager(private val context: Context) {
     private val currentLocale: String
         get() = context.resources.configuration.locales[0].toString().substring(0, 2)
     // Language with API's supported codes
-    var language: String
+    open var language: String
         get() = prefs.getString(PREF_LANGUAGE, LANG_ENGLISH) ?: currentLocale
         set(value) {
             val validLang = when (value.lowercase()) {
