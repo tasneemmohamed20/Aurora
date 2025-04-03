@@ -8,6 +8,8 @@
 
     <string name="settings">Settings</string>
     <string name="temperature">Temperature</string>
+    <string name="condition">Condition</string>
+    <string name="notificationNotConnected">This data is expired. Check your connection and try Aurora again.</string>
     <string name="temperatureunit">Temperature Unit</string>
     <string name="wind_speed">Wind Speed</string>
     <string name="wind_speedunit">Wind Speed Unit</string>

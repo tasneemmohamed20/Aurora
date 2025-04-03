@@ -84,9 +84,9 @@ class WeatherAlertWorker(
         val isConnected = context.hasNetworkConnection()
         val contentText = if (weatherInfo != null) {
             if (isConnected) {
-                "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}"
+                "🌡️ ${context.resources.getString(R.string.temperature)}: ${weatherInfo.temperature}°\n🌤️ ${context.resources.getString(R.string.condition)}: ${weatherInfo.description?.capitalize()}"
             } else {
-                "🌡️ Temperature: ${weatherInfo.temperature}°\n🌤️ Condition: ${weatherInfo.description?.capitalize()}\n⚠️ This data is expired. Check your connection and try Aurora again."
+                "🌡️ ${context.resources.getString(R.string.temperature)}: ${weatherInfo.temperature}°\n🌤️ ${context.resources.getString(R.string.condition)}: ${weatherInfo.description?.capitalize()}\n⚠️ ${context.resources.getString(R.string.notificationNotConnected)}"
             }
         } else {
             "🌦️ Weather conditions update available"
