@@ -14,6 +14,7 @@
     <string name="location">Location</string>
     <string name="language">Language</string>
     <string name="gps">GPS</string>
+    <string name="manual">Manual</string>
     <string name="HourForeCast">24 Hour Forecast</string>
     <string name="DayForeCast">5-Day Forecast</string>
     <string name="Wind">Wind</string>
@@ -50,4 +51,9 @@
     <string name="miles_per_hour">Mp/h</string>
     <string name="english">English</string>
     <string name="arabic">Arabic</string>
+
+    <string name="addToFav">Add to Favorites</string>
+    <string name="addToFavMsg">Would you like to add this location to favorites?</string>
+    <string name="retry">Retry</string>
+
 </resources>

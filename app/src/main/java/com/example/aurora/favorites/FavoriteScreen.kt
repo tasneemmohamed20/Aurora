@@ -85,7 +85,7 @@ fun FavoriteScreen(
                 .background(gradientBrush(isSystemInDarkTheme()))
         ) {
             CustomAppBar(
-                title = "Favorites",
+                title = context.resources.getString(R.string.fav),
                 leftIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(

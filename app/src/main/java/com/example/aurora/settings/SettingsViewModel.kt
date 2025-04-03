@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.aurora.R
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.repo.WeatherRepository
 import com.example.aurora.utils.toDoubleOrZero

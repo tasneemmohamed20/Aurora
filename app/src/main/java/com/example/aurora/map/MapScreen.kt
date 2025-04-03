@@ -16,7 +16,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.aurora.R
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.ui.components.CustomSearchBar
 import com.example.aurora.ui.components.SearchBarState
@@ -39,7 +40,6 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +51,7 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsState()
     val currentLocation by viewModel.location.collectAsState()
     val searchQuery = remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     val markerState = remember {
         MarkerState(LatLng(location.lat, location.lng))
@@ -68,8 +69,8 @@ fun MapScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDialog() },
-            title = { Text("Add to Favorites") },
-            text = { Text("Would you like to add this location to favorites?") },
+            title = { Text(context.resources.getString(R.string.addToFav)) },
+            text = { Text(context.resources.getString(R.string.addToFavMsg)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -80,7 +81,7 @@ fun MapScreen(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Yes")
+                    Text(context.resources.getString(R.string.yes))
                 }
             },
             dismissButton = {
@@ -90,7 +91,7 @@ fun MapScreen(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
-                    Text("No")
+                    Text(context.resources.getString(R.string.no))
                 }
             }
         )
@@ -160,7 +161,7 @@ fun MapScreen(
                             onClick = { viewModel.retryLocationUpdate() },
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
-                            Text("Retry")
+                            Text(context.resources.getString(R.string.retry))
                         }
                     }
                 }

@@ -27,7 +27,7 @@ import com.example.aurora.settings.components.SettingRow
 import com.example.aurora.settings.components.SettingsDropdownMenu
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.theme.gradientBrush
-
+//1 //2 //3 // 4
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
@@ -38,9 +38,25 @@ fun SettingsScreen(
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
     val temperatureUnits = listOf(
-        "C", "F", "K")
-    val windSpeedUnits = listOf("m/s", "Mp/h")
-    val languageOptions = listOf("en", "ar")
+        Pair("C", context.getString(R.string.celsius)),
+        Pair("F", context.getString(R.string.fahrenheit)),
+        Pair("K", context.getString(R.string.kelvin))
+    )
+
+    val windSpeedUnits = listOf(
+        Pair("m/s", context.getString(R.string.meters_per_second)),
+        Pair("Mp/h", context.getString(R.string.miles_per_hour))
+    )
+
+    val languageOptions = listOf(
+        Pair("en", context.getString(R.string.english)),
+        Pair("ar", context.getString(R.string.arabic))
+    )
+
+    val locationOptions = listOf(
+        Pair("GPS", context.getString(R.string.gps)),
+        Pair("Manual", context.getString(R.string.manual))
+    )
 
     val selectedTemperatureUnit by viewModel.selectedTemperatureUnit.collectAsState()
     val selectedSpeedUnit by viewModel.selectedSpeedUnit.collectAsState()
@@ -71,13 +87,14 @@ fun SettingsScreen(
             SettingRow(
                 modifier = Modifier.fillMaxWidth(),
                 settingName = context.resources.getString(R.string.temperatureunit),
-                value = selectedTemperatureUnit,
+                value = temperatureUnits.find { it.first == selectedTemperatureUnit }?.second
+                    ?: selectedTemperatureUnit,
                 onSettingClick = { expandedMenu = "temperature" }
             )
             if (expandedMenu == "temperature") {
                 SettingsDropdownMenu(
                     expanded = true,
-                    options = temperatureUnits,
+                    options = temperatureUnits.map { it.second },
                     onOptionSelected = { viewModel.updateTemperatureUnit(it) },
                     onDismiss = { expandedMenu = null }
                 )
@@ -89,13 +106,14 @@ fun SettingsScreen(
             SettingRow(
                 modifier = Modifier.fillMaxWidth(),
                 settingName = context.resources.getString(R.string.wind_speedunit),
-                value = selectedSpeedUnit,
+                value = windSpeedUnits.find { it.first == selectedSpeedUnit }?.second
+                ?: selectedSpeedUnit,
                 onSettingClick = { expandedMenu = "windSpeed" }
             )
             if (expandedMenu == "windSpeed") {
                 SettingsDropdownMenu(
                     expanded = true,
-                    options = windSpeedUnits,
+                    options = windSpeedUnits.map { it.second },
                     onOptionSelected = { unit ->
                         when (unit) {
                             "m/s" -> viewModel.updateTemperatureUnit("C")
@@ -119,7 +137,7 @@ fun SettingsScreen(
             if (expandedMenu == "location") {
                 SettingsDropdownMenu(
                     expanded = true,
-                    options = languageOptions,
+                    options = locationOptions.map { it.second },
                     onOptionSelected = {
                         viewModel.updateLanguage(it)
                         // Let configuration changes handle the UI update
@@ -135,13 +153,14 @@ fun SettingsScreen(
             SettingRow(
                 modifier = Modifier.fillMaxWidth(),
                 settingName = context.resources.getString(R.string.language),
-                value = selectedLanguage,
+                value = languageOptions.find { it.first == selectedLanguage }?.second
+                    ?: selectedLanguage,
                 onSettingClick = { expandedMenu = "language" }
             )
             if (expandedMenu == "language") {
                 SettingsDropdownMenu(
                     expanded = true,
-                    options = languageOptions,
+                    options = languageOptions.map { it.second },
                     onOptionSelected = {
                         viewModel.updateLanguage(it)
                         expandedMenu = null
