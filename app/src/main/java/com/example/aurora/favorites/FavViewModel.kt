@@ -20,7 +20,7 @@ class FavViewModel(private val repository: WeatherRepository) : ViewModel() {
         loadFavorites()
     }
 
-    private fun loadFavorites() {
+    fun loadFavorites() {
         viewModelScope.launch {
             try {
                 repository.getAllForecasts()
