@@ -21,6 +21,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.core.content.edit
 import com.example.aurora.utils.toDoubleOrZero
+import kotlin.math.abs
 
 class ForecastViewModel(
     private val repository: WeatherRepository,
@@ -181,7 +182,7 @@ class ForecastViewModel(
     }
 
     private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
-        _cityName.value = null
+//        _cityName.value = null
 
         try {
             if (locationHelper.context.hasNetworkConnection()) {
@@ -207,18 +208,41 @@ class ForecastViewModel(
 
     private suspend fun getForecastFromDatabase(latitude: Double, longitude: Double) {
         repository.getAllForecasts().collect { forecasts ->
+            Log.d("ForecastViewModel", "Collected forecasts: $forecasts")
             val forecast = forecasts.find { forecast ->
-                forecast.city.coord?.lat == latitude &&
-                        forecast.city.coord?.lon == longitude
+                // Use a small epsilon for floating point comparison
+                val epsilon = 0.0001
+                val lat = forecast.city.coord?.lat ?: 0.0
+                val lon = forecast.city.coord?.lon ?: 0.0
+
+                abs(lat.toDoubleOrZero() - latitude.toDoubleOrZero()) < epsilon &&
+                        abs(lon.toDoubleOrZero() - longitude.toDoubleOrZero()) < epsilon
             }
 
             if (forecast != null) {
+                Log.d("ForecastViewModel", "Found forecast: $forecast")
                 currentForecastResponse = forecast
                 val processedData = processHourlyData(forecast)
                 _forecastState.value = ForecastUiState.Success(processedData)
                 _cityName.value = forecast.city.name
             } else {
-                _forecastState.value = ForecastUiState.Error("No cached data available")
+                // First try to get the home location if available
+                val homeForecast = forecasts.find { it.isHome }
+                if (homeForecast != null) {
+                    currentForecastResponse = homeForecast
+                    val processedData = processHourlyData(homeForecast)
+                    _forecastState.value = ForecastUiState.Success(processedData)
+                    _cityName.value = homeForecast.city.name
+                } else if (forecasts.isNotEmpty()) {
+                    // If no home location, use the most recent forecast
+                    val mostRecent = forecasts.first()
+                    currentForecastResponse = mostRecent
+                    val processedData = processHourlyData(mostRecent)
+                    _forecastState.value = ForecastUiState.Success(processedData)
+                    _cityName.value = mostRecent.city.name
+                } else {
+                    _forecastState.value = ForecastUiState.Error("No cached data available")
+                }
             }
         }
     }

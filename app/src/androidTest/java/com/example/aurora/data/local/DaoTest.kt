@@ -95,7 +95,7 @@ class DaoTest {
         dao.insertForecast(forecast)
 
         //when
-        dao.deleteForecast(forecast)
+        dao.deleteForecast(forecast.city.name)
 
         //then
         val deletedForecast = dao.getForecastByCityName("Test City").first()

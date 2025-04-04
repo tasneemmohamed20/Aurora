@@ -64,52 +64,38 @@ class WeatherRepositoryImp(
     override suspend fun insertForecast(forecast: ForecastResponse): Long {
         val existingForecasts = localDataSource.getAllForecasts().firstOrNull() ?: emptyList()
 
-        // More detailed logging for debugging
-        forecast.city.coord?.let { newCoord ->
-            Log.d("WeatherRepositoryImp", "New coordinates: lat=${newCoord.lat}, lon=${newCoord.lon}")
-            existingForecasts.forEach { existing ->
-                existing.city.coord?.let { existingCoord ->
-                    Log.d("WeatherRepositoryImp", "Existing coordinates for ${existing.city.name}: lat=${existingCoord.lat}, lon=${existingCoord.lon}")
-                }
-            }
+        // Find duplicate by city name (ID)
+        val duplicateForecast = existingForecasts.find { existing ->
+            val equalCity = existing.city.name.equals(forecast.city.name, ignoreCase = true)
+            val equalLat = abs(existing.city.coord.lat.toDoubleOrZero() - forecast.city.coord.lat.toDoubleOrZero()) < 0.0001
+            val equalLon = abs(existing.city.coord.lon.toDoubleOrZero() - forecast.city.coord.lon.toDoubleOrZero()) < 0.0001
+            equalCity || (equalLat && equalLon)
         }
-
-        // Find location with same coordinates - with more precise comparison
-        val duplicateByCoords = existingForecasts.find { existing ->
-            existing.city.coord?.let { existingCoord ->
-                forecast.city.coord?.let { newCoord ->
-                    // Using equals with some tolerance for floating point comparison
-                    val latEqual = abs(existingCoord.lat.toDoubleOrZero() - newCoord.lat.toDoubleOrZero()) < 0.000001
-                    val lonEqual = abs(existingCoord.lon.toDoubleOrZero() - newCoord.lon.toDoubleOrZero()) < 0.000001
-                    latEqual && lonEqual
-                }
-            } == true
-        }
-
-        Log.d("WeatherRepositoryImp", "Found duplicate: $duplicateByCoords")
-
 
         return when {
+            // If duplicate exists and is home, preserve home status
+            duplicateForecast?.isHome == true -> {
+                localDataSource.deleteForecast(duplicateForecast.city.name)
+                localDataSource.insertForecast(forecast.copy(isHome = true))
+            }
+            // If new forecast is marked as home
             forecast.isHome -> {
+                // Remove old home flag if exists
                 existingForecasts.find { it.isHome }?.let { oldHome ->
-                    val result = localDataSource.deleteForecast(oldHome.city.name)
-                    Log.d("WeatherRepositoryImp", "Deleted old home forecast: $result")
+                    localDataSource.deleteForecast(oldHome.city.name)
                     localDataSource.insertForecast(oldHome.copy(isHome = false))
                 }
-//                duplicateByCoords?.let { localDataSource.deleteForecast(it.city.name) }
+                // Delete duplicate if exists and insert new home forecast
+                duplicateForecast?.let { localDataSource.deleteForecast(it.city.name) }
                 localDataSource.insertForecast(forecast)
             }
-            duplicateByCoords != null -> {
-                val isHome = duplicateByCoords.isHome
-//                val result =localDataSource.deleteForecast(duplicateByCoords.city.name)
-//                Log.d("WeatherRepositoryImp", "Deleted old home forecast: $result")
-                localDataSource.insertForecast(forecast.copy(isHome = isHome))
+            // If duplicate exists (not home)
+            duplicateForecast != null -> {
+                localDataSource.deleteForecast(duplicateForecast.city.name)
+                localDataSource.insertForecast(forecast.copy(isHome = false))
             }
-            else -> {
-
-                    localDataSource.insertForecast(forecast.copy(isHome = false))
-
-            }
+            // New non-duplicate forecast
+            else -> localDataSource.insertForecast(forecast.copy(isHome = false))
         }
     }
 

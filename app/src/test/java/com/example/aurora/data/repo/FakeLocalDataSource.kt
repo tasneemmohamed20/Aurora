@@ -6,6 +6,7 @@ import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.remote.RemoteDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.collections.remove
 
 class FakeLocalDataSource(val forecastList: MutableList<ForecastResponse>?) : LocalDataSource, RemoteDataSource {
     override suspend fun getAllForecasts(): Flow<List<ForecastResponse>> = flow {
@@ -18,8 +19,9 @@ class FakeLocalDataSource(val forecastList: MutableList<ForecastResponse>?) : Lo
     }
 
 
-    override suspend fun deleteForecast(forecast: ForecastResponse): Int {
-        return if (forecastList?.remove(forecast) == true) 1 else 0
+    override suspend fun deleteForecast(city: String): Int {
+        val forecast = forecastList?.find { it.city.name == city }
+        return if (forecast != null && forecastList.remove(forecast)) 1 else 0
     }
 
     override suspend fun getForecastByCityName(cityName: String): Flow<ForecastResponse?> {

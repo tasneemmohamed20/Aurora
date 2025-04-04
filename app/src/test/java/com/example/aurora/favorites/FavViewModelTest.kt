@@ -71,7 +71,7 @@ class FavViewModelTest {
 
 
         // then
-        coVerify { repository.deleteForecast(forecast) }
+        coVerify { repository.deleteForecast(forecast.city.name) }
         assert(favViewModel.uiState.value is FavUiState.Success)
         assert((favViewModel.uiState.value as FavUiState.Success).forecasts.isEmpty())
     }
