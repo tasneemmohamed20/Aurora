@@ -29,6 +29,12 @@ class SettingsViewModel(
     private val _selectedSpeedUnit = MutableStateFlow(settingsManager.getDisplayUnits().second)
     val selectedSpeedUnit = _selectedSpeedUnit.asStateFlow()
 
+    private val _selectedLocationMode = MutableStateFlow(settingsManager.locationMode)
+    val selectedLocationMode = _selectedLocationMode.asStateFlow()
+
+    // Add navigation event
+    private val _openMap = MutableStateFlow(false)
+    val openMap = _openMap.asStateFlow()
 
     fun updateTemperatureUnit(unit: String) {
         settingsManager.temperatureUnit = unit
@@ -70,6 +76,23 @@ class SettingsViewModel(
             }
         }
     }
+
+    fun updateLocationMode(mode: String) {
+        settingsManager.locationMode = mode
+        _selectedLocationMode.value = settingsManager.locationMode
+
+        // Open map if manual mode is selected
+        if (mode == SettingsManager.MODE_MANUAL) {
+            _openMap.value = true
+        }
+    }
+
+    // Reset map navigation
+    fun onMapOpened() {
+        _openMap.value = false
+    }
+
+
 
     class Factory(
         private val settingsManager: SettingsManager,

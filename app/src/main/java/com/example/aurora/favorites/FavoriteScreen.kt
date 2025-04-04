@@ -1,6 +1,7 @@
 package com.example.aurora.favorites
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -137,7 +138,9 @@ fun FavoriteScreen(
                                     minTemp = "$minTemp°",
                                     currentTemp = currentTemp,
                                     isHome = true,
-                                    onDelete = { viewModel.deleteFavorite(forecast) },
+                                    onDelete = { viewModel.deleteFavorite(forecast)
+                                               Log.d("onDelete-FavoriteScreen", "${forecast}")
+                                               },
                                     onClick = {
                                         onFavoriteClicked(
                                             Location(

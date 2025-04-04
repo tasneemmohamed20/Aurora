@@ -1,19 +1,24 @@
 // File: `app/src/main/java/com/example/aurora/data/repo/WeatherRepositoryImp.kt`
 package com.example.aurora.data.repo
 
+import android.util.Log
 import com.example.aurora.data.local.LocalDataSource
 import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.data.model.forecast.ForecastResponse
 import com.example.aurora.data.remote.RemoteDataSource
 import com.example.aurora.settings.SettingsManager
+import com.example.aurora.utils.toDoubleOrZero
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlin.math.abs
+import kotlin.toString
 
 class WeatherRepositoryImp(
     private val remoteDataSource: RemoteDataSource,
     private val localDataSource: LocalDataSource,
-    private val settingsManager: SettingsManager
+    private val settingsManager: SettingsManager,
+
 ) : WeatherRepository {
 
     private val apiKey = "97ad72691a7bd2c8f56c772da5029512"
@@ -59,42 +64,72 @@ class WeatherRepositoryImp(
     override suspend fun insertForecast(forecast: ForecastResponse): Long {
         val existingForecasts = localDataSource.getAllForecasts().firstOrNull() ?: emptyList()
 
-        // Delete all forecasts with same coordinates
-        existingForecasts.filter { existing ->
-            val existingLat = existing.city.coord.lat.toString().toDoubleOrNull()
-            val existingLon = existing.city.coord.lon.toString().toDoubleOrNull()
-            val newLat = forecast.city.coord.lat.toString().toDoubleOrNull()
-            val newLon = forecast.city.coord.lon.toString().toDoubleOrNull()
-
-            existingLat != null && existingLon != null &&
-                    newLat != null && newLon != null &&
-                    existingLat == newLat && existingLon == newLon
-        }.forEach { existingForecast ->
-            localDataSource.deleteForecast(existingForecast)
+        // More detailed logging for debugging
+        forecast.city.coord?.let { newCoord ->
+            Log.d("WeatherRepositoryImp", "New coordinates: lat=${newCoord.lat}, lon=${newCoord.lon}")
+            existingForecasts.forEach { existing ->
+                existing.city.coord?.let { existingCoord ->
+                    Log.d("WeatherRepositoryImp", "Existing coordinates for ${existing.city.name}: lat=${existingCoord.lat}, lon=${existingCoord.lon}")
+                }
+            }
         }
 
-        // Create forecast copy with correct isHome flag
-        val forecastToInsert = when {
-            // If explicitly setting as home or if first forecast
-            forecast.isHome || existingForecasts.isEmpty() -> {
-                forecast.copy(isHome = true)
-            }
-            // If existing forecast was home, preserve home status
-            existingForecasts.any { it.isHome &&
-                    it.city.coord.lat.toString().toDoubleOrNull() == forecast.city.coord.lat.toString().toDoubleOrNull() &&
-                    it.city.coord.lon.toString().toDoubleOrNull() == forecast.city.coord.lon.toString().toDoubleOrNull() } -> {
-                forecast.copy(isHome = true)
-            }
-            // New forecast, not home
-            else -> forecast.copy(isHome = false)
+        // Find location with same coordinates - with more precise comparison
+        val duplicateByCoords = existingForecasts.find { existing ->
+            existing.city.coord?.let { existingCoord ->
+                forecast.city.coord?.let { newCoord ->
+                    // Using equals with some tolerance for floating point comparison
+                    val latEqual = abs(existingCoord.lat.toDoubleOrZero() - newCoord.lat.toDoubleOrZero()) < 0.000001
+                    val lonEqual = abs(existingCoord.lon.toDoubleOrZero() - newCoord.lon.toDoubleOrZero()) < 0.000001
+                    latEqual && lonEqual
+                }
+            } == true
         }
 
-        // Insert the new forecast
-        return localDataSource.insertForecast(forecastToInsert)
+        Log.d("WeatherRepositoryImp", "Found duplicate: $duplicateByCoords")
+
+
+        return when {
+            forecast.isHome -> {
+                existingForecasts.find { it.isHome }?.let { oldHome ->
+                    val result = localDataSource.deleteForecast(oldHome.city.name)
+                    Log.d("WeatherRepositoryImp", "Deleted old home forecast: $result")
+                    localDataSource.insertForecast(oldHome.copy(isHome = false))
+                }
+//                duplicateByCoords?.let { localDataSource.deleteForecast(it.city.name) }
+                localDataSource.insertForecast(forecast)
+            }
+            duplicateByCoords != null -> {
+                val isHome = duplicateByCoords.isHome
+//                val result =localDataSource.deleteForecast(duplicateByCoords.city.name)
+//                Log.d("WeatherRepositoryImp", "Deleted old home forecast: $result")
+                localDataSource.insertForecast(forecast.copy(isHome = isHome))
+            }
+            else -> {
+
+                    localDataSource.insertForecast(forecast.copy(isHome = false))
+
+            }
+        }
     }
 
-    override suspend fun deleteForecast(forecast: ForecastResponse): Int {
-        return localDataSource.deleteForecast(forecast)
+    override suspend fun deleteForecast(cityName: String): Int {
+        try {
+            val existingForecasts = localDataSource.getAllForecasts().firstOrNull() ?: emptyList()
+            val existingForecast = existingForecasts.find { existing ->
+                existing.city.name == cityName
+            }
+
+            return if (existingForecast != null) {
+                val result = localDataSource.deleteForecast(existingForecast.city.name) // Use existing forecast
+                Log.d("WeatherRepositoryImp", "Deleted forecast: $result")
+                result
+            } else {
+                0
+            }
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override suspend fun getForecastByCityName(cityName: String): Flow<ForecastResponse?> {

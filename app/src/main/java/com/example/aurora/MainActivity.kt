@@ -122,6 +122,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         // Force RTL/LTR at activity creation
         val language = settingsManager.language
         window.decorView.layoutDirection =
@@ -135,9 +136,9 @@ class MainActivity : ComponentActivity() {
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AppRoutes { isSplashScreen ->
-                        if (!isSplashScreen) {
-                            enableEdgeToEdge()
-                        }
+//                        if (!isSplashScreen) {
+//                            enableEdgeToEdge()
+//                        }
                     }
                 }
             }
@@ -159,10 +160,10 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    override fun onResume() {
-        super.onResume()
-        enableEdgeToEdge()
-    }
+//    override fun onResume() {
+//        super.onResume()
+//        enableEdgeToEdge()
+//    }
 
 }
 
@@ -232,7 +233,7 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 LocalDataSourceImp(
                     AppDatabase.getInstance(context).getForecastDao()
                 ),
-                settingsManager
+                settingsManager,
             )
         )
     )
@@ -349,7 +350,14 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                         onBackClick = {
                             navController.popBackStack()
                         },
-                        settingsViewModel
+                        onOpenMap = {
+                            val currentLocation = mapsViewModel.location.value
+                            val lat = currentLocation?.lat ?: 30.0444
+                            val lon = currentLocation?.lng ?: 31.2357
+                            navController.navigate(Routes.MapRoute(lat, lon).toString())
+                        },
+                        settingsViewModel,
+
                     )
                 }
             }

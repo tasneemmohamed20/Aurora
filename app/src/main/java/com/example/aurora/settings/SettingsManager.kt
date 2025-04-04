@@ -1,6 +1,7 @@
 package com.example.aurora.settings
 
 import android.content.Context
+import kotlin.apply
 
 open class SettingsManager(private val context: Context) {
     private val prefs by lazy {
@@ -19,6 +20,10 @@ open class SettingsManager(private val context: Context) {
         // API supported languages
         const val LANG_ENGLISH = "en"
         const val LANG_ARABIC = "ar"
+
+        const val PREF_LOCATION_MODE = "location_mode"
+        const val MODE_GPS = "gps"
+        const val MODE_MANUAL = "manual"
     }
 
 
@@ -75,5 +80,15 @@ open class SettingsManager(private val context: Context) {
                 else -> LANG_ENGLISH
             }
             prefs.edit().putString(PREF_LANGUAGE, validLang).apply()
+        }
+
+    open var locationMode: String
+        get() = prefs.getString(PREF_LOCATION_MODE, MODE_GPS) ?: MODE_GPS
+        set(value) {
+            val validMode = when (value.lowercase()) {
+                MODE_MANUAL -> MODE_MANUAL
+                else -> MODE_GPS
+            }
+            prefs.edit().putString(PREF_LOCATION_MODE, validMode).apply()
         }
 }

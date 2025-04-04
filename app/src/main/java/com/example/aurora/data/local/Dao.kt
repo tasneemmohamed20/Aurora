@@ -17,8 +17,8 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertForecast(forecast: ForecastResponse): Long
 
-    @Delete
-    suspend fun deleteForecast(forecast: ForecastResponse): Int
+    @Query("DELETE FROM forecast_table WHERE city_city_name = :cityName")
+    suspend fun deleteForecast(cityName: String): Int
 
     @Query("SELECT * FROM forecast_table")
     fun getAllForecasts(): Flow<List<ForecastResponse>>

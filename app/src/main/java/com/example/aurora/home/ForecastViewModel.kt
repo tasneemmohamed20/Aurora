@@ -131,26 +131,18 @@ class ForecastViewModel(
 
     fun confirmHomeLocation() {
         viewModelScope.launch {
-            try {
-                currentForecastResponse?.let { response ->
-                    // Remove home status from all forecasts
-                    repository.getAllForecasts().firstOrNull()?.let { forecasts ->
-                        forecasts.forEach { forecast ->
-                            if (forecast.isHome) {
-                                repository.deleteForecast(forecast)
-                            }
-                        }
-                        // Insert new home forecast
-                        repository.insertForecast(response.copy(isHome = true))
-                        sharedPrefs.edit {
-                            putBoolean(HAS_SET_HOME_KEY, true)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("ForecastViewModel", "Error setting home location: ${e.message}")
+            currentForecastResponse?.let { forecast ->
+                val updatedForecast = forecast.copy(isHome = true)
+                repository.insertForecast(updatedForecast)
+                // Update current response to reflect the change
+                currentForecastResponse = updatedForecast
+                // Update UI state without fetching new data
+                _forecastState.value = ForecastUiState.Success(processHourlyData(updatedForecast))
             }
             _homeDialogVisible.value = false
+            sharedPrefs.edit {
+                putBoolean(HAS_SET_HOME_KEY, true)
+            }
         }
     }
 
@@ -190,14 +182,14 @@ class ForecastViewModel(
 
     private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
         _cityName.value = null
-//        _forecastState.value = ForecastUiState.Loading
 
         try {
             if (locationHelper.context.hasNetworkConnection()) {
                 repository.getForecast(latitude, longitude).collect { response ->
-                    currentForecastResponse = response
+                    // Don't set home flag here - wait for user confirmation
+                    currentForecastResponse = response.copy(isHome = false)
                     if (response.cod == "200") {
-                        repository.insertForecast(response)
+                        repository.insertForecast(response.copy(isHome = false))
                         val processedData = processHourlyData(response)
                         _forecastState.value = ForecastUiState.Success(processedData)
                         _cityName.value = response.city.name

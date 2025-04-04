@@ -1,5 +1,6 @@
 package com.example.aurora.settings
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +33,7 @@ import com.example.aurora.ui.theme.gradientBrush
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
+    onOpenMap: () -> Unit,
     viewModel: SettingsViewModel
 ){
     val context = LocalContext.current
@@ -61,8 +64,15 @@ fun SettingsScreen(
     val selectedTemperatureUnit by viewModel.selectedTemperatureUnit.collectAsState()
     val selectedSpeedUnit by viewModel.selectedSpeedUnit.collectAsState()
     val selectedLanguage by viewModel.selectedLanguage.collectAsState()
+    val selectedLocationMode by viewModel.selectedLocationMode.collectAsState()
+    val openMap by viewModel.openMap.collectAsState()
 
-
+    LaunchedEffect(openMap) {
+        if (openMap) {
+            onOpenMap()
+            viewModel.onMapOpened()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -95,11 +105,13 @@ fun SettingsScreen(
                 SettingsDropdownMenu(
                     expanded = true,
                     options = temperatureUnits.map { it.second },
-                    onOptionSelected = { viewModel.updateTemperatureUnit(it) },
+                    onOptionSelected = { viewModel.updateTemperatureUnit(it.substring(0, 1))
+                        Log.d("SettingsScreen", "Selected temperature unit: $it")},
                     onDismiss = { expandedMenu = null }
                 )
             }
         }
+
         Spacer( modifier = Modifier.size(16.dp))
 
         Box {
@@ -131,21 +143,24 @@ fun SettingsScreen(
             SettingRow(
                 modifier = Modifier.fillMaxWidth(),
                 settingName = context.resources.getString(R.string.location),
-                value = "GPS",
+                value = locationOptions.find { it.first == selectedLocationMode }?.second
+                    ?: selectedLocationMode,
                 onSettingClick = { expandedMenu = "location" }
             )
             if (expandedMenu == "location") {
                 SettingsDropdownMenu(
                     expanded = true,
                     options = locationOptions.map { it.second },
-                    onOptionSelected = {
-                        viewModel.updateLanguage(it)
-                        // Let configuration changes handle the UI update
+                    onOptionSelected = { mode ->
+                        when (mode) {
+                            context.getString(R.string.gps) -> viewModel.updateLocationMode(SettingsManager.MODE_GPS)
+                            context.getString(R.string.manual) -> viewModel.updateLocationMode(SettingsManager.MODE_MANUAL)
+                        }
+                        expandedMenu = null
                     },
                     onDismiss = { expandedMenu = null }
                 )
             }
-
         }
         Spacer( modifier = Modifier.size(16.dp))
 
@@ -162,8 +177,9 @@ fun SettingsScreen(
                     expanded = true,
                     options = languageOptions.map { it.second },
                     onOptionSelected = {
-                        viewModel.updateLanguage(it)
+                        viewModel.updateLanguage(it.substring(0, 2))
                         expandedMenu = null
+                        Log.d("SettingsScreen", "Selected language: $it")
                     },
                     onDismiss = { expandedMenu = null }
                 )
