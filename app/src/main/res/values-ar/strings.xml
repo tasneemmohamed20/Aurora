@@ -23,7 +23,12 @@
     <string name="Pressure">الضغط</string>
     <string name="FeelsLike">تشعر به</string>
     <string name="notifications">الإشعارات</string>
-
+    <string name="condition">
+        الحالة
+    </string>
+    <string name="notificationNotConnected">
+        هذه البيانات منتهية الصلاحية. تحقق من اتصالك وحاول استخدام Aurora مرة أخرى.
+    </string>
     <string name="gust">العصفة</string>
     <string name="direction">الإتجاه</string>
     <string name="fav">المفضلة</string>
@@ -65,6 +70,10 @@
     <string name="addToFav">إضافة إلى المفضلة</string>
     <string name="addToFavMsg">هل ترغب في إضافة هذا الموقع إلى المفضلة؟</string>
     <string name="retry">إعادة المحاولة</string>
+    <string name="defaultnotification">🌦️ تحديث حالة الطقس متاح</string>
+    <string name="schedulenotificationtitle">جدولة تنبيه الطقس</string>
+    <string name="schedulenotification">جدولة التنبيه</string>
+
 
 
 </resources>

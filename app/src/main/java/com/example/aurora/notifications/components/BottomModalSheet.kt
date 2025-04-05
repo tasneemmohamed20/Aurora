@@ -1,7 +1,6 @@
 package com.example.aurora.notifications.components
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,7 +9,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
@@ -22,7 +20,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.aurora.R
 import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.notifications.NotificationsViewModel
 import java.util.Calendar
@@ -35,7 +35,7 @@ fun WeatherAlertBottomSheet(
 ) {
     var useDefaultSound by remember { mutableStateOf(true) }
     val timePickerState = rememberTimePickerState()
-
+    val context = LocalContext.current
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface
@@ -47,7 +47,7 @@ fun WeatherAlertBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Schedule Weather Alert",
+                text = context.resources.getString(R.string.schedulenotification),
                 style = MaterialTheme.typography.titleLarge
             )
 
@@ -87,7 +87,7 @@ fun WeatherAlertBottomSheet(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Schedule Alert")
+                Text(context.resources.getString(R.string.schedulenotification))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

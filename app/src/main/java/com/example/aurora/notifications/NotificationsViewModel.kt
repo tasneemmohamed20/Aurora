@@ -110,14 +110,9 @@ class NotificationsViewModel(
         viewModelScope.launch {
             try {
                 scheduledAlerts.value.find { it.id == id }?.let { alert ->
-                    val result = repository.deleteAlert(alert)
-                    if (result > 0) {
+                        repository.deleteAlert(alert)
                         workManager.cancelWeatherAlert(alert.id)
-                        // Refresh alerts after successful deletion
                         loadAlerts()
-                    } else {
-                        Log.e("NotificationsVM", "Failed to delete alert")
-                    }
                 }
             } catch (e: Exception) {
                 Log.e("NotificationsVM", "Error canceling alert", e)

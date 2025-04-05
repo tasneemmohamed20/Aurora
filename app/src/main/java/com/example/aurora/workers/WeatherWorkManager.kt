@@ -55,6 +55,20 @@ class WeatherWorkManager(private val context: Context) {
     }
 
     fun cancelWeatherAlert(id: String) {
-        WorkManager.getInstance(context).cancelUniqueWork("weatherAlert_$id")
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, WeatherAlertReceiver::class.java).apply {
+            action = WeatherAlertWorker.ACTION_SHOW_ALERT
+            putExtra(WeatherAlertWorker.EXTRA_ALERT_ID, id)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
     }
 }

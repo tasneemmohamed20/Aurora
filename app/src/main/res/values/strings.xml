@@ -57,5 +57,8 @@
     <string name="addToFav">Add to Favorites</string>
     <string name="addToFavMsg">Would you like to add this location to favorites?</string>
     <string name="retry">Retry</string>
+    <string name="defaultnotification">🌦️ Weather conditions update available</string>
+    <string name="schedulenotificationtitle">Schedule Weather alert</string>
+    <string name="schedulenotification">Schedule alert</string>
 
 </resources>

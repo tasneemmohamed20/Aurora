@@ -340,7 +340,7 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
 
                 composable(Routes.NotificationsRoute.toString()) {
                     NotificationsScreen(
-                        onBackClick = {},
+                        onBackClick = { navController.popBackStack()},
                         viewModel = notificationsViewModel,
                     )
                 }

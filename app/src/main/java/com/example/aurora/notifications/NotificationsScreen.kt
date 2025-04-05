@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.aurora.R
 import com.example.aurora.data.model.WeatherAlertSettings
 import com.example.aurora.notifications.components.WeatherAlertBottomSheet
 import com.example.aurora.ui.components.CustomAppBar
@@ -68,7 +69,6 @@ fun NotificationsScreen(
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val scheduledAlerts by viewModel.scheduledAlerts.collectAsState()
-
 
     LaunchedEffect(Unit) {
         while(true) {
@@ -96,7 +96,7 @@ fun NotificationsScreen(
                 .background(gradientBrush(isSystemInDarkTheme()))
         ) {
             CustomAppBar(
-                title = "Weather Alerts",
+                title = context.resources.getString(R.string.notifications),
                 leftIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -174,6 +174,7 @@ private fun formatTimestamp(time: Long): String {
 
 @Composable
 private fun EmptyNotificationsMessage() {
+    val context = LocalContext.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -181,20 +182,20 @@ private fun EmptyNotificationsMessage() {
     ) {
         Icon(
             imageVector = Icons.Default.Notifications,
-            contentDescription = "No Notifications",
+            contentDescription = context.resources.getString(R.string.NoActiveNotifications),
             tint = Color.White,
             modifier = Modifier.size(64.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No active notifications",
+            text = context.resources.getString(R.string.NoActiveNotifications),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Enable notifications to stay updated with weather alerts",
+            text = context.resources.getString(R.string.NoActiveNotifications_msg),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center

@@ -57,8 +57,8 @@ fun SettingsScreen(
     )
 
     val locationOptions = listOf(
-        Pair("GPS", context.getString(R.string.gps)),
-        Pair("Manual", context.getString(R.string.manual))
+        Pair("gps", context.getString(R.string.gps)),
+        Pair("manual", context.getString(R.string.manual))
     )
 
     val selectedTemperatureUnit by viewModel.selectedTemperatureUnit.collectAsState()
