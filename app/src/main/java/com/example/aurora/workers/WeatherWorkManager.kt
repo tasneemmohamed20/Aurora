@@ -4,11 +4,13 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import java.util.concurrent.TimeUnit
 
 class WeatherWorkManager(private val context: Context) {
@@ -19,13 +21,19 @@ class WeatherWorkManager(private val context: Context) {
             .build()
 
         val weatherWork = PeriodicWorkRequestBuilder<WeatherUpdateWorker>(
-            30, TimeUnit.MINUTES,
+            15, TimeUnit.MINUTES,
             5, TimeUnit.MINUTES
-        ).setConstraints(constraints)
+        )
+            .setConstraints(constraints)
+            .setBackoffCriteria(
+                BackoffPolicy.LINEAR,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS
+            )
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            WeatherUpdateWorker::class.java.simpleName,
+            "WeatherUpdate",
             ExistingPeriodicWorkPolicy.UPDATE,
             weatherWork
         )

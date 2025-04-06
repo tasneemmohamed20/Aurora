@@ -1,4 +1,5 @@
 [versions]
+accompanistSwiperefresh = "0.27.0"
 accompanistSystemuicontroller = "0.32.0"
 agp = "8.9.1"
 androidxCoreKtx = "1.6.1"
@@ -37,11 +38,13 @@ roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
 roomRuntime = "2.6.1"
 storage = "1.5.0"
+swiperefreshlayout = "1.2.0-beta01"
 timber = "5.0.1"
 workRuntimeKtx = "2.10.0"
 runtimeLivedata = "1.7.8"
 
 [libraries]
+accompanist-swiperefresh = { module = "com.google.accompanist:accompanist-swiperefresh", version.ref = "accompanistSwiperefresh" }
 accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanistSystemuicontroller" }
 androidx-arch-core-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidxCoreTesting" }
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
@@ -51,6 +54,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 compose = { module = "com.github.bumptech.glide:compose", version.ref = "compose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }

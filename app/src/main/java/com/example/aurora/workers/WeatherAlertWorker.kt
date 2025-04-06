@@ -89,7 +89,7 @@ class WeatherAlertWorker(
                 "🌡️ ${context.resources.getString(R.string.temperature)}: ${weatherInfo.temperature}°\n🌤️ ${context.resources.getString(R.string.condition)}: ${weatherInfo.description?.capitalize()}\n⚠️ ${context.resources.getString(R.string.notificationNotConnected)}"
             }
         } else {
-            "🌦️ Weather conditions update available"
+            context.resources.getString(R.string.defaultnotification)
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)

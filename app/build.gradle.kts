@@ -86,6 +86,8 @@ dependencies {
 
     implementation (libs.material)
     implementation (libs.material3)
+    implementation (libs.androidx.swiperefreshlayout)
+    implementation(libs.accompanist.swiperefresh)
 
 
     testImplementation(libs.junit)
@@ -111,7 +113,7 @@ dependencies {
     androidTestImplementation (libs.androidx.espresso.core)
 
     //Timber
-    implementation (libs.timber)
+//    implementation (libs.timber)
 
     // hamcrest
     testImplementation (libs.org.hamcrest.hamcrest)

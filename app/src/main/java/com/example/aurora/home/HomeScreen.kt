@@ -20,6 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,11 +51,15 @@ import com.example.aurora.home.home_components.WindData
 import com.example.aurora.ui.components.CustomAppBar
 import com.example.aurora.ui.components.MenuOptions
 import com.example.aurora.ui.theme.gradientBrush
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     forecastViewModel: ForecastViewModel,
@@ -68,6 +74,10 @@ fun HomeScreen(
     val forecastState by forecastViewModel.forecastState.collectAsState()
     val showHomeDialog by forecastViewModel.homeDialogVisible.collectAsState()
     val context = LocalContext.current
+
+    val coroutineScope = rememberCoroutineScope()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
 
     if (showHomeDialog) {
         AlertDialog(
@@ -92,6 +102,13 @@ fun HomeScreen(
             }
         )
     }
+    fun handleRefresh() {
+        coroutineScope.launch {
+            isRefreshing = true
+            forecastViewModel.refresh()
+            isRefreshing = false
+        }
+    }
 
     val configuration = LocalConfiguration.current
     LaunchedEffect(configuration) {
@@ -105,116 +122,137 @@ fun HomeScreen(
             .fillMaxSize()
             .background(background)
     ) {
-        Column {
-            CustomAppBar(
-                title = cityName ?: "",
-                rightIcon = {
-                    var showMenu by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
+
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = { handleRefresh() },
+            indicator = { state, trigger ->
+                SwipeRefreshIndicator(
+                    state = state,
+                    refreshTriggerDistance = trigger,
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            }
+        ){
+            Column {
+                CustomAppBar(
+                    title = cityName ?: "",
+                    rightIcon = {
+                        var showMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Menu",
+                                    tint = Color.White
+                                )
+                            }
+                            MenuOptions(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                onSettingsClick = onNavigateToSettings,
+                                onAlertsClick = onNavigateToAlerts,
+                                context = context
+                            )
+                        }
+                    },
+                    leftIcon = {
+                        IconButton(onClick = onNavigateToFav) {
                             Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu",
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Settings",
                                 tint = Color.White
                             )
                         }
-                        MenuOptions(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            onSettingsClick = onNavigateToSettings,
-                            onAlertsClick = onNavigateToAlerts,
-                            context = context
-                        )
                     }
-                },
-                leftIcon = {
-                    IconButton(onClick = onNavigateToFav) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Settings",
-                            tint = Color.White
-                        )
-                    }
-                }
-            )
+                )
 
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                when(forecastState) {
-                    is ForecastUiState.Loading -> {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                    is ForecastUiState.Success -> {
-                        val forecastData = (forecastState as ForecastUiState.Success).data
-                        val currentData = forecastData.first()
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            item { CurrentWeatherContent(currentData) }
-                            item {
-                                HourlyForecast(forecastData)
-                                DailyForecast(forecastData, context)
-                            }
-                            item {
-                                WindData(
-                                    windSpeed = currentData.wind?.speed as? Double ?: 0.0,
-                                    windGust = currentData.wind?.gust as? Double ?: 0.0,
-                                    windDirection = currentData.wind?.deg?.toFloat() ?: 0f
-                                )
-                            }
-                            item {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        FeelsLike(feelsLike = (currentData.main?.feelsLike ?: 0.0) as Double)
-                                    }
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        Humidity(humidity = currentData.main?.humidity ?: 0)
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (forecastState) {
+                        is ForecastUiState.Loading -> {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+
+                        is ForecastUiState.Success -> {
+                            val forecastData = (forecastState as ForecastUiState.Success).data
+                            val currentData = forecastData.first()
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                item { CurrentWeatherContent(currentData) }
+                                item {
+                                    HourlyForecast(forecastData)
+                                    DailyForecast(forecastData, context)
+                                }
+                                item {
+                                    WindData(
+                                        windSpeed = currentData.wind?.speed as? Double ?: 0.0,
+                                        windGust = currentData.wind?.gust as? Double ?: 0.0,
+                                        windDirection = currentData.wind?.deg?.toFloat() ?: 0f
+                                    )
+                                }
+                                item {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            FeelsLike(
+                                                feelsLike = (currentData.main?.feelsLike
+                                                    ?: 0.0) as Double
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            Humidity(humidity = currentData.main?.humidity ?: 0)
+                                        }
                                     }
                                 }
-                            }
-                            item {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        Clouds(clouds = currentData.clouds?.all ?: 0)
-                                    }
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        Pressure(pressure = currentData.main?.pressure ?: 0)
+                                item {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            Clouds(clouds = currentData.clouds?.all ?: 0)
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            Pressure(pressure = currentData.main?.pressure ?: 0)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    is ForecastUiState.Error -> {
-                        Text(
-                            text = (forecastState as ForecastUiState.Error).message,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
+
+                        is ForecastUiState.Error -> {
+                            Text(
+                                text = (forecastState as ForecastUiState.Error).message,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+
+
     }
 }
 

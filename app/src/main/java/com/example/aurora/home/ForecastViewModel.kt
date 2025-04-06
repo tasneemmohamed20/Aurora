@@ -62,7 +62,6 @@ class ForecastViewModel(
         viewModelScope.launch {
             WorkerUtils.initRepository(repository)
             weatherWorkManager.setupPeriodicWeatherUpdate()
-
             loadHomeLocation()
         }
     }
@@ -76,8 +75,8 @@ class ForecastViewModel(
                 )
                 _cachedLocation.value = location
                 fetchForecastData(location.lat, location.lng)
-            } ?: setupLocationUpdates() // If no home location found, use current location
-        } ?: setupLocationUpdates() // If no forecasts at all, use current location
+            } ?: setupLocationUpdates()
+        } ?: setupLocationUpdates()
     }
 
     fun resetToCurrentLocation() {
@@ -101,31 +100,35 @@ class ForecastViewModel(
                     return@launch
                 }
 
-                locationHelper.startLocationUpdates()
-                locationHelper.getLocationUpdates().collect { location ->
-                    location?.let {
-                        if (shouldUseCurrentLocation) {
-                            val currentLocation = "${it.latitude},${it.longitude}"
-                            val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
-                            val hasSetHomeForLocation =
-                                sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
+                val location = locationHelper.getCurrentLocation()
+                    ?: locationHelper.getLastLocation()
 
-                            // Only show dialog if never asked before or location changed and home not set
-                            if (!sharedPrefs.getBoolean(HAS_ASKED_HOME_KEY, false) ||
-                                (lastLocation != null && lastLocation != currentLocation && !hasSetHomeForLocation)
-                            ) {
-                                _homeDialogVisible.value = true
-                                sharedPrefs.edit {
-                                    putBoolean(HAS_ASKED_HOME_KEY, true)
-                                        .putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
-                                }
-                            }
-                                fetchForecastData(it.latitude, it.longitude)
-                        }
+                location?.let {
+                    if (shouldUseCurrentLocation) {
+                        handleNewLocation(it)
+                        fetchForecastData(it.latitude, it.longitude)
                     }
+                } ?: run {
+                    _forecastState.value = ForecastUiState.Error("Unable to get location")
                 }
             } catch (e: Exception) {
-                _forecastState.value = ForecastUiState.Error("Failed to setup location updates: ${e.message}")
+                _forecastState.value = ForecastUiState.Error("Failed to setup location: ${e.message}")
+            }
+        }
+    }
+
+    private fun handleNewLocation(location: android.location.Location) {
+        val currentLocation = "${location.latitude},${location.longitude}"
+        val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
+        val hasSetHomeForLocation = sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
+
+        if (!sharedPrefs.getBoolean(HAS_ASKED_HOME_KEY, false) ||
+            (lastLocation != null && lastLocation != currentLocation && !hasSetHomeForLocation)
+        ) {
+            _homeDialogVisible.value = true
+            sharedPrefs.edit {
+                putBoolean(HAS_ASKED_HOME_KEY, true)
+                putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
             }
         }
     }
@@ -289,13 +292,17 @@ class ForecastViewModel(
         }
     }
 
-    public override fun onCleared() {
-        super.onCleared()
-        locationHelper.stopLocationUpdates()
+    fun refresh() {
+        viewModelScope.launch {
+            if (shouldUseCurrentLocation) {
+                setupLocationUpdates()
+            } else {
+                _cachedLocation.value?.let { location ->
+                    fetchForecastData(location.lat, location.lng)
+                }
+            }
+        }
     }
-
-
-
 
     class Factory(
         private val repository: WeatherRepository,

@@ -57,14 +57,19 @@ class MapsViewModel(
 
     private fun getCurrentLocation() {
         viewModelScope.launch {
-            if (locationHelper.hasLocationPermission()) {
+            try {
+                if (!locationHelper.hasLocationPermission()) {
+                    _uiState.value = MapUiState.Error("Location permission not granted")
+                    return@launch
+                }
+
                 locationHelper.getCurrentLocation()?.let { loc ->
                     val newLoc = Location(loc.latitude, loc.longitude)
                     _location.value = newLoc
                     fetchAddress("${newLoc.lat},${newLoc.lng}")
                 } ?: run {
-                    // Try getting last known location as fallback
-                    locationHelper.getLastKnownLocation()?.let { lastLoc ->
+                    // Try getting last location as fallback
+                    locationHelper.getLastLocation()?.let { lastLoc ->
                         val newLoc = Location(lastLoc.latitude, lastLoc.longitude)
                         _location.value = newLoc
                         fetchAddress("${newLoc.lat},${newLoc.lng}")
@@ -72,8 +77,10 @@ class MapsViewModel(
                         _uiState.value = MapUiState.Error("Could not get current location")
                     }
                 }
-            } else {
+            } catch (_: SecurityException) {
                 _uiState.value = MapUiState.Error("Location permission not granted")
+            } catch (e: Exception) {
+                _uiState.value = MapUiState.Error("Failed to get location: ${e.message}")
             }
         }
     }

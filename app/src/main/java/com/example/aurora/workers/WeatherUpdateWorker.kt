@@ -1,6 +1,7 @@
 package com.example.aurora.workers
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.aurora.data.model.forecast.ForecastResponse
@@ -20,23 +21,32 @@ class WeatherUpdateWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val location = locationHelper.getLastKnownLocation()
-            if (location != null) {
-                val repository = WorkerUtils.getRepository()
-                val response = repository.getForecast(location.latitude, location.longitude)
-                    .firstOrNull()
+            val location = locationHelper.getCurrentLocation()
+                ?: locationHelper.getLastLocation()
 
-                if (response != null) {
-                    WorkerUtils.cacheWeatherData(response)
-                    Result.success()
-                } else {
-                    Result.retry()
-                }
+            if (location == null) {
+                Log.d("WeatherUpdateWorker", "No location available")
+                return@withContext Result.retry()
+            }
+
+            val repository = WorkerUtils.getRepository()
+            val response = repository.getForecast(location.latitude, location.longitude)
+                .firstOrNull()
+
+            if (response != null) {
+                WorkerUtils.cacheWeatherData(response)
+                Log.d("WeatherUpdateWorker", "Weather update successful")
+                Result.success()
             } else {
+                Log.d("WeatherUpdateWorker", "No weather data received")
                 Result.retry()
             }
-        } catch (_: SecurityException) {
+        } catch (e: SecurityException) {
+            Log.e("WeatherUpdateWorker", "Security exception", e)
             Result.retry()
+        } catch (e: Exception) {
+            Log.e("WeatherUpdateWorker", "Error updating weather", e)
+            Result.failure()
         }
     }
 }

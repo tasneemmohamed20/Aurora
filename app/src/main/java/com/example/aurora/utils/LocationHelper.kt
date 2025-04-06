@@ -13,17 +13,11 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.Tasks
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class LocationHelper(internal val context: Context) {
     private val fusedClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
-    private val _locationFlow = MutableStateFlow<Location?>(null)
-    private var locationCallback: LocationCallback? = null
 
     fun hasLocationPermission(): Boolean = ActivityCompat.checkSelfPermission(
         context,
@@ -31,89 +25,55 @@ class LocationHelper(internal val context: Context) {
     ) == PackageManager.PERMISSION_GRANTED
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    fun getLastKnownLocation(): Location? {
-        if (!hasLocationPermission()) return null
-        return try {
-            Tasks.await(fusedClient.lastLocation)?.also {
-                _locationFlow.value = it
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    fun getLocationUpdates(): Flow<Location?> = _locationFlow.asStateFlow()
-
-    fun startLocationUpdates() {
+    suspend fun getLastLocation(): Location? = suspendCoroutine { continuation ->
         if (!hasLocationPermission()) {
-            Log.d("LocationHelper", "No location permission")
-            return
+            continuation.resume(null)
+            return@suspendCoroutine
         }
 
         try {
-            // Get last known location immediately
-            fusedClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    Log.d("LocationHelper", "Last known location: ${it.latitude}, ${it.longitude}")
-                    _locationFlow.value = it
-                } ?: Log.d("LocationHelper", "No last known location")
-            }
+            fusedClient.lastLocation
+                .addOnSuccessListener { location ->
+                    continuation.resume(location)
+                }
+                .addOnFailureListener {
+                    continuation.resume(null)
+                }
+        } catch (e: SecurityException) {
+            Log.e("LocationHelper", "Security exception while getting location", e)
+            continuation.resume(null)
+        }
+    }
 
-            val locationRequest = LocationRequest
-                .Builder(30000)
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    suspend fun getCurrentLocation(): Location? = suspendCoroutine { continuation ->
+        if (!hasLocationPermission()) {
+            continuation.resume(null)
+            return@suspendCoroutine
+        }
+
+        try {
+            val locationRequest = LocationRequest.Builder(10000)
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setMinUpdateIntervalMillis(10000)
-                .setMaxUpdateDelayMillis(30000)
+                .setMaxUpdates(1)
                 .build()
 
-            locationCallback = object : LocationCallback() {
+            val locationCallback = object : LocationCallback() {
                 override fun onLocationResult(result: LocationResult) {
-                    result.lastLocation?.let { location ->
-                        Log.d("LocationHelper", "Location update: ${location.latitude}, ${location.longitude}")
-                        _locationFlow.value = location
-                    }
+                    fusedClient.removeLocationUpdates(this)
+                    continuation.resume(result.lastLocation)
                 }
             }
-
-            locationCallback?.let { callback ->
-                fusedClient.requestLocationUpdates(
-                    locationRequest,
-                    callback,
-                    context.mainLooper
-                ).addOnSuccessListener {
-                    Log.d("LocationHelper", "Location updates requested successfully")
-                }.addOnFailureListener { e ->
-                    Log.e("LocationHelper", "Failed to request location updates", e)
-                }
-            }
-        } catch (e: SecurityException) {
-            Log.e("LocationHelper", "Security exception in location updates", e)
-            e.printStackTrace()
-        }
-    }
-
-    fun stopLocationUpdates() {
-        locationCallback?.let { callback ->
-            fusedClient.removeLocationUpdates(callback)
-        }
-        locationCallback = null
-    }
-
-    suspend fun getCurrentLocation(): Location? = suspendCoroutine { continuation ->
-        try {
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            if (hasLocationPermission()) {
-                fusedLocationClient.lastLocation
-                    .addOnSuccessListener { location ->
-                        continuation.resume(location)
-                    }
-                    .addOnFailureListener { e ->
-                        continuation.resume(null)
-                    }
-            } else {
+            Log.d("LocationHelper", "Requesting location updates")
+            fusedClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                context.mainLooper
+            ).addOnFailureListener {
                 continuation.resume(null)
             }
-        } catch (_: Exception) {
+        } catch (e: SecurityException) {
+            Log.e("LocationHelper", "Security exception while getting location", e)
             continuation.resume(null)
         }
     }
