@@ -36,6 +36,7 @@ class SettingsViewModel(
     private val _openMap = MutableStateFlow(false)
     val openMap = _openMap.asStateFlow()
 
+
     fun updateTemperatureUnit(unit: String) {
         settingsManager.temperatureUnit = unit
         val displayUnits = settingsManager.getDisplayUnits()
@@ -83,7 +84,7 @@ class SettingsViewModel(
 
         // Open map if manual mode is selected
         if (mode == SettingsManager.MODE_MANUAL) {
-            _openMap.value = true
+            _openMap.value = true // This triggers map navigation
         }
     }
 

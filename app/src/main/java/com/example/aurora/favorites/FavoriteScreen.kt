@@ -63,7 +63,7 @@ import com.example.aurora.utils.toDoubleOrZero
 fun FavoriteScreen(
     viewModel: FavViewModel,
     onBackClick: () -> Unit,
-    onSearchClick: () -> Unit,
+    onFabClick: () -> Unit,
     onFavoriteClicked: (Location) -> Unit
 ) {
     val uiState = viewModel.uiState.collectAsState().value
@@ -207,7 +207,7 @@ fun FavoriteScreen(
                 .padding(16.dp)
                 .align(Alignment.BottomEnd),
             icon = Icons.Default.Add,
-            onClick = onSearchClick
+            onClick = onFabClick
         )
     }
 

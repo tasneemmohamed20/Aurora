@@ -33,7 +33,7 @@ import com.example.aurora.ui.theme.gradientBrush
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
-    onOpenMap: () -> Unit,
+    onOpenMap: (source: String) -> Unit,
     viewModel: SettingsViewModel
 ){
     val context = LocalContext.current
@@ -69,7 +69,7 @@ fun SettingsScreen(
 
     LaunchedEffect(openMap) {
         if (openMap) {
-            onOpenMap()
+            onOpenMap("settings")
             viewModel.onMapOpened()
         }
     }

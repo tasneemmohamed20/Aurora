@@ -296,17 +296,20 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                 }
 
                 composable(
-                    route = "map/{lat}/{lon}",
+                    route = "map/{lat}/{lon}/{source}",
                     arguments = listOf(
                         navArgument("lat") { type = NavType.FloatType },
-                        navArgument("lon") { type = NavType.FloatType }
+                        navArgument("lon") { type = NavType.FloatType },
+                        navArgument("source") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
                     val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 30.0444
                     val lon = backStackEntry.arguments?.getFloat("lon")?.toDouble() ?: 31.2357
+                    val source = backStackEntry.arguments?.getString("source") ?: "favorites"
 
                     MapScreen(
                         location = Location(lat, lon),
+                        source = source,
                         onLocationSelected = { location ->
                             forecastViewModel.updateLocation(location)
                             navController.popBackStack()
@@ -322,11 +325,11 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
                             //                        forecastViewModel.resetLocationFlags()
                             navController.popBackStack()
                         },
-                        onSearchClick = {
+                        onFabClick = {
                             val currentLocation = mapsViewModel.location.value
                             val lat = currentLocation?.lat ?: 30.0444
                             val lon = currentLocation?.lng ?: 31.2357
-                            navController.navigate(Routes.MapRoute(lat, lon).toString())
+                            navController.navigate(Routes.MapRoute(lat, lon, "favorites").toString())
                         },
                         onFavoriteClicked = { location ->
                             forecastViewModel.updateLocation(location)
@@ -347,14 +350,12 @@ fun AppRoutes(onScreenChange: (Boolean) -> Unit = {}) {
 
                 composable(Routes.SettingsRoute.toString()) {
                     SettingsScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                        onOpenMap = {
+                        onBackClick = { navController.popBackStack() },
+                        onOpenMap = { source ->
                             val currentLocation = mapsViewModel.location.value
                             val lat = currentLocation?.lat ?: 30.0444
                             val lon = currentLocation?.lng ?: 31.2357
-                            navController.navigate(Routes.MapRoute(lat, lon).toString())
+                            navController.navigate(Routes.MapRoute(lat, lon, source).toString())
                         },
                         settingsViewModel,
 

@@ -51,7 +51,7 @@ class ForecastViewModel(
     var shouldUseCurrentLocation = true
 
     private val _cachedLocation = MutableStateFlow<Location?>(null)
-    val cachedLocation = _cachedLocation.asStateFlow()
+//    val cachedLocation = _cachedLocation.asStateFlow()
 
 
     init {
@@ -70,11 +70,11 @@ class ForecastViewModel(
         repository.getAllForecasts().firstOrNull()?.let { forecasts ->
             forecasts.find { it.isHome }?.let { homeForecast ->
                 val location = Location(
-                    homeForecast.city.coord?.lat.toDoubleOrZero(),
-                    homeForecast.city.coord?.lon.toDoubleOrZero()
+                    homeForecast.city.coord.lat.toDoubleOrZero(),
+                    homeForecast.city.coord.lon.toDoubleOrZero()
                 )
                 _cachedLocation.value = location
-                fetchForecastData(location.lat, location.lng)
+                fetchForecastData(location.lat, location.lng, showHomeDialog = false)
             } ?: setupLocationUpdates()
         } ?: setupLocationUpdates()
     }
@@ -163,20 +163,10 @@ class ForecastViewModel(
 
             try {
                 if (locationHelper.context.hasNetworkConnection()) {
-                    fetchForecastData(location.lat, location.lng)
+                    // Don't show home dialog for favorite locations
+                    fetchForecastData(location.lat, location.lng, showHomeDialog = false)
                 } else {
                     getForecastFromDatabase(location.lat, location.lng)
-                }
-
-                val currentLocation = "${location.lat},${location.lng}"
-                val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
-                val hasSetHomeForLocation = sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
-
-                if (lastLocation != currentLocation && !hasSetHomeForLocation) {
-                    _homeDialogVisible.value = true
-                    sharedPrefs.edit {
-                        putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
-                    }
                 }
             } catch (e: Exception) {
                 _forecastState.value = ForecastUiState.Error("Failed to update location: ${e.message}")
@@ -184,28 +174,53 @@ class ForecastViewModel(
         }
     }
 
-    private suspend fun fetchForecastData(latitude: Double, longitude: Double) {
+    private suspend fun fetchForecastData(latitude: Double, longitude: Double, showHomeDialog: Boolean = true) {
 //        _cityName.value = null
 
         try {
-            if (locationHelper.context.hasNetworkConnection()) {
-                repository.getForecast(latitude, longitude).collect { response ->
-                    // Don't set home flag here - wait for user confirmation
-                    currentForecastResponse = response.copy(isHome = false)
-                    if (response.cod == "200") {
-                        repository.insertForecast(response.copy(isHome = false))
-                        val processedData = processHourlyData(response)
-                        _forecastState.value = ForecastUiState.Success(processedData)
-                        _cityName.value = response.city.name
-                    } else {
-                        getForecastFromDatabase(latitude, longitude)
+            try {
+                if (locationHelper.context.hasNetworkConnection()) {
+                    repository.getForecast(latitude, longitude).collect { response ->
+                        currentForecastResponse = response
+                        if (response.cod == "200") {
+                            // Don't modify home flag when displaying favorite locations
+                            repository.insertForecast(response)
+                            val processedData = processHourlyData(response)
+                            _forecastState.value = ForecastUiState.Success(processedData)
+                            _cityName.value = response.city.name
+
+                            // Only show home dialog for initial location setup
+                            if (showHomeDialog) {
+                                checkAndShowHomeDialog(latitude, longitude)
+                            }
+                        } else {
+                            getForecastFromDatabase(latitude, longitude)
+                        }
                     }
+                } else {
+                    getForecastFromDatabase(latitude, longitude)
                 }
-            } else {
+            } catch (_: Exception) {
                 getForecastFromDatabase(latitude, longitude)
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             getForecastFromDatabase(latitude, longitude)
+        }
+    }
+
+    private fun checkAndShowHomeDialog(latitude: Double, longitude: Double) {
+        val currentLocation = "$latitude,$longitude"
+        val lastLocation = sharedPrefs.getString(LAST_KNOWN_LOCATION_KEY, null)
+        val hasSetHomeForLocation = sharedPrefs.getBoolean(HAS_SET_HOME_KEY, false)
+
+        if (!sharedPrefs.getBoolean(HAS_ASKED_HOME_KEY, false) ||
+            (lastLocation != null && lastLocation != currentLocation && !hasSetHomeForLocation)
+        ) {
+            _homeDialogVisible.value = true
+            sharedPrefs.edit {
+                putBoolean(HAS_ASKED_HOME_KEY, true)
+                putString(LAST_KNOWN_LOCATION_KEY, currentLocation)
+            }
         }
     }
 
@@ -215,8 +230,8 @@ class ForecastViewModel(
             val forecast = forecasts.find { forecast ->
                 // Use a small epsilon for floating point comparison
                 val epsilon = 0.0001
-                val lat = forecast.city.coord?.lat ?: 0.0
-                val lon = forecast.city.coord?.lon ?: 0.0
+                val lat = forecast.city.coord.lat
+                val lon = forecast.city.coord.lon
 
                 abs(lat.toDoubleOrZero() - latitude.toDoubleOrZero()) < epsilon &&
                         abs(lon.toDoubleOrZero() - longitude.toDoubleOrZero()) < epsilon

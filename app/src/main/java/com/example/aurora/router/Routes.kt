@@ -22,9 +22,10 @@ sealed class Routes{
     @Serializable
     data class MapRoute(
         val lat: Double,
-        val lon: Double
+        val lon: Double,
+        val source : String
     ) : Routes() {
-        override fun toString(): String = "map/$lat/$lon"
+        override fun toString(): String = "map/$lat/$lon/$source"
     }
 
 }

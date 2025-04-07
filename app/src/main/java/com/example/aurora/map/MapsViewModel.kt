@@ -1,8 +1,10 @@
 package com.example.aurora.map
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.aurora.R
 import com.example.aurora.data.model.map.GeocodingResults
 import com.example.aurora.data.model.map.Location
 import com.example.aurora.data.repo.WeatherRepository
@@ -16,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -43,6 +46,14 @@ class MapsViewModel(
     private var tempLocation: Location? = null
 
 
+    private val _source = MutableStateFlow("favorites")
+    val source = _source.asStateFlow()
+
+    fun setSource(newSource: String) {
+        _source.value = newSource
+    }
+
+
     init {
         viewModelScope.launch {
             // Increase delay to ensure permission status is updated
@@ -50,9 +61,56 @@ class MapsViewModel(
             getCurrentLocation()
         }
     }
+    fun getDialogMessage(context: Context): String {
+        return if (_source.value == "settings") {
+            context.getString(R.string.setHomeLocation_msg)
+        } else {
+            context.getString(R.string.addToFavMsg)
+        }
+    }
 
     fun openDialog() {
         _showDialog.value = true
+    }
+
+    fun handleDialogConfirm(onComplete: () -> Unit) {
+        if (_source.value == "settings") {
+            addToHomeLocation(onComplete)
+        } else {
+            addToFavorites(onComplete)
+        }
+    }
+
+    private fun addToHomeLocation(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                tempLocation?.let { location ->
+                    // First, remove existing home location if any
+                    weatherRepository.getAllForecasts().firstOrNull()?.let { forecasts ->
+                        forecasts.find { it.isHome }?.let { oldHome ->
+                            weatherRepository.deleteForecast(oldHome.city.name)
+                            weatherRepository.insertForecast(oldHome.copy(isHome = false))
+                        }
+                    }
+
+                    // Then set the new home location
+                    weatherRepository.getForecast(location.lat, location.lng)
+                        .collect { forecast ->
+                            // Explicitly set isHome to true
+                            val updatedForecast = forecast.copy(isHome = true)
+                            weatherRepository.insertForecast(updatedForecast)
+                            // Break the flow after first emission
+                            return@collect
+                        }
+                }
+            } catch (e: Exception) {
+                _uiState.value = MapUiState.Error("Failed to set home location: ${e.message}")
+            } finally {
+                _showDialog.value = false
+                tempLocation = null
+                onComplete() // Call completion handler
+            }
+        }
     }
 
     private fun getCurrentLocation() {
@@ -160,7 +218,7 @@ class MapsViewModel(
         }
     }
 
-    fun addToFavorites() {
+    internal fun addToFavorites(onComplete: () -> Unit) {
         viewModelScope.launch {
             try {
                 tempLocation?.let { location ->
@@ -174,6 +232,7 @@ class MapsViewModel(
             } finally {
                 _showDialog.value = false
                 tempLocation = null
+                onComplete() // Call completion handler
             }
         }
     }

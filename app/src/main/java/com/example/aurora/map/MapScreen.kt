@@ -46,6 +46,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 fun MapScreen(
     location: Location,
     onLocationSelected: (Location) -> Unit,
+    source: String,
     viewModel : MapsViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -62,41 +63,19 @@ fun MapScreen(
     }
 
     val predictions by viewModel.predictions.collectAsState()
-
     val showDialog by viewModel.showDialog.collectAsState()
 
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDialog() },
-            title = { Text(context.resources.getString(R.string.addToFav)) },
-            text = { Text(context.resources.getString(R.string.addToFavMsg)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.addToFavorites()
-                        currentLocation?.let { onLocationSelected(it) }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(context.resources.getString(R.string.yes))
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { viewModel.dismissDialog() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Text(context.resources.getString(R.string.no))
-                }
-            }
-        )
+    // Remove auto-selection for settings flow.
+    if (source != "settings") {
+        LaunchedEffect(source) {
+            viewModel.setSource(source)
+        }
+    } else {
+        // In settings flow, also set the source so that later on the confirmation uses home action.
+        LaunchedEffect(Unit) {
+            viewModel.setSource("settings")
+        }
     }
-
 
     LaunchedEffect(currentLocation) {
         currentLocation?.let { loc ->
@@ -106,10 +85,7 @@ fun MapScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
@@ -137,14 +113,9 @@ fun MapScreen(
                             .padding(16.dp)
                     )
                 }
-
                 is MapUiState.Success -> {
-                    val address = (uiState as MapUiState.Success).addresses.firstOrNull()
-                    address?.let {
-
-                    }
+                    // Optionally display address information.
                 }
-
                 is MapUiState.Error -> {
                     Column(
                         modifier = Modifier
@@ -165,7 +136,6 @@ fun MapScreen(
                         }
                     }
                 }
-
                 else -> Unit
             }
         }
@@ -221,9 +191,68 @@ fun MapScreen(
                         }
                     }
                 }
-            },
+            }
         )
 
-
+        // Updated dialog: confirm button performs home update if source is "settings"
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDialog() },
+                title = {
+                    Text(
+                        text = if (source == "settings")
+                            context.resources.getString(R.string.setHomeLocation)
+                        else
+                            context.resources.getString(R.string.addToFav)
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (source == "settings")
+                            context.resources.getString(R.string.setHomeLocation_msg)
+                        else
+                            context.resources.getString(R.string.addToFavMsg)
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (source == "settings") {
+                                viewModel.handleDialogConfirm {  // Pass lambda function as expected
+                                    currentLocation?.let { location ->
+                                        onLocationSelected(location)
+                                    }
+                                }  // calls addToHomeLocation()
+                            } else {
+                                viewModel.handleDialogConfirm {  // Pass lambda function as expected
+                                    currentLocation?.let { location ->
+                                        onLocationSelected(location)
+                                    }
+                                }
+                            }
+//                            currentLocation?.let { onLocationSelected(it) }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(if (source == "settings")
+                            context.resources.getString(R.string.yes)
+                        else
+                            context.resources.getString(R.string.yes))
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { viewModel.dismissDialog() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
+                    ) {
+                        Text(context.resources.getString(R.string.no))
+                    }
+                }
+            )
+        }
     }
 }
